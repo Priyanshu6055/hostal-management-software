@@ -20,7 +20,8 @@ class Subscription extends Model
         'subscription_type',
         'start_date',
         'end_date',
-        'status'
+        'status',
+        'remarks'
     ];
 
     public function resident()

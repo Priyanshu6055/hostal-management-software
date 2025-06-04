@@ -75,11 +75,9 @@
             // Fetch residents
             const residentRes = await fetch("{{ url('/api/residents') }}");
             const residentData = await residentRes.json();
-            // Changed from residentData.residents to residentData.data
             if (!Array.isArray(residentData.data)) throw new Error('Invalid residents data format.');
 
             residentSelect.html('<option value="">Select Resident</option>');
-            // Changed from residentData.residents.forEach to residentData.data.forEach
             residentData.data.forEach(res => {
                 residentSelect.append(`<option value="${res.id}">${res.name} (${res.scholar_no})</option>`);
             });
@@ -89,12 +87,12 @@
             // Fetch fees
             const feeRes = await fetch("{{ url('/api/fees') }}");
             const feeData = await feeRes.json();
-            // Added check for feeData.data and changed iteration to feeData.data.forEach
             if (!Array.isArray(feeData.data)) throw new Error('Invalid fees data format.');
 
             feeSelect.html('<option value="">Select Hostel Fee</option>');
-            feeData.data.forEach(fee => { // Changed to feeData.data.forEach
-                if (fee.name.toLowerCase().includes('hostel')) {
+            feeData.data.forEach(fee => {
+                // Only show active hostel-related fees
+                if (fee.is_active === 1 && fee.name.toLowerCase().includes('hostel')) {
                     feeSelect.append(`<option value="${fee.fee_head_id}" data-name="${fee.name}">${fee.name} - ₹${fee.amount}</option>`);
                 }
             });

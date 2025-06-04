@@ -7,13 +7,14 @@
         </div>
     @endif
 
-    <h2 class="text-center mt-3">Your Pending Hostel Fee Payments</h2>
+    <h2 class="text-center mt-3">Your Pending Hostel Fines</h2>
 
     <div class="container mt-4">
         <table class="table table-bordered table-striped" id="payments-table" style="display: none;">
             <thead class="table-dark">
                 <tr>
                     <th>Fee Type</th>
+                    <th>Remarks</th>
                     <th>Total Amount</th>
                     <th>Amount Paid</th>
                     <th>Remaining Amount</th>
@@ -26,7 +27,7 @@
             <tbody id="payments-body"></tbody>
         </table>
 
-        <p id="no-payments" class="text-danger text-center mt-3" style="display: none;">No pending hostel payments found.</p>
+        <p id="no-payments" class="text-danger text-center mt-3" style="display: none;">No pending fines found.</p>
         <p id="error-message" class="text-danger text-center mt-3" style="display: none;">Error loading data, please try again.</p>
     </div>
 
@@ -69,16 +70,17 @@
                 let hasPayments = false;
 
                 subscriptions.forEach(subscription => {
-                    // ✅ Skip if subscription type is NOT "Hostel fee"
-                    if (subscription.subscription_type !== "Hostel fee") {
+                    // ✅ Show only "Other" fees (which represent fines)
+                    if (subscription.subscription_type !== "Other") {
                         return;
                     }
 
-                    const feeType = subscription.subscription_type;
+                    const feeType = "Fine"; // Display name override
                     const subscriptionId = subscription.subscription_id;
+                    const remarks = subscription.remarks ?? 'N/A';
 
                     if (subscription.payments && subscription.payments.length > 0) {
-                        const payment = subscription.payments[0]; // show only latest
+                        const payment = subscription.payments[0]; // latest
 
                         if (payment.payment_status === 'Pending') {
                             hasPayments = true;
@@ -86,6 +88,7 @@
                             const row = `
                                 <tr>
                                     <td>${feeType}</td>
+                                    <td>${remarks}</td>
                                     <td>₹${payment.total_amount ?? '0.00'}</td>
                                     <td>₹${payment.amount ?? '0.00'}</td>
                                     <td>₹${payment.remaining_amount ?? '0.00'}</td>
@@ -93,7 +96,7 @@
                                     <td>${payment.payment_method ?? 'N/A'}</td>
                                     <td>${payment.created_at ?? '-'}</td>
                                     <td>
-                                        <a href="/resident/subscription_payment?subscription_id=${subscriptionId}&amount=${payment.remaining_amount}" class="btn btn-success btn-sm">Make Payment</a>
+                                        <a href="/resident/subscription_payment?subscription_id=${subscriptionId}&amount=${payment.remaining_amount}" class="btn btn-danger btn-sm">Pay Fine</a>
                                     </td>
                                 </tr>
                             `;

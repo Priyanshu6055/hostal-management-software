@@ -78,6 +78,10 @@
             <i class="bi bi-cash-coin"></i> Resident History and Payments
         </a>
 
+        <a href="{{ route('accountant.feemaster') }}" class="{{ request()->is('accountant/feemaster') ? 'active' : '' }}">
+    <i class="bi bi-wallet-fill"></i> Fee Master
+</a>
+    
 
     </div>
 

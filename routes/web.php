@@ -99,6 +99,8 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::post('/admin/api/beds', [BedController::class, 'store'])->name('admin.store_bed');
 
 
+ 
+
 
     Route::view('/admin/accessories', 'admin.accessory')->name('admin.accessories');
     Route::view('/admin/accessories/create', 'admin.create_accessory')->name('admin.create_accessory');
@@ -138,6 +140,9 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
 
     Route::view('/admin/pending-guests', 'admin.pending_guest')->name('guest.pending');
     Route::view('/admin/guests/paid', 'admin.paidguest')->name('admin.paid.guests');
+
+
+
 });
 
 // ✅ Superadmin Routes
@@ -235,6 +240,20 @@ Route::get('/accountant/account', function () {
     return view('accountant.account');
 })->name('accountant.account');
 
-Route::get('/accountant/fees', function () {
+
+    Route::get('/accountant/fees', function () {
     return view('accountant.fee'); 
 })->name('accountant.fees');
+
+
+Route::get('/accountant/feemaster', function () {
+    return view('accountant.feemaster');
+})->name('accountant.feemaster');
+
+Route::get('/admin/fine', function () {
+    return view('admin.fine');
+})->name('admin.fine');
+
+Route::get('/resident/fine', function () {
+    return view('resident.fine');
+});

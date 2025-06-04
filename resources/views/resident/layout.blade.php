@@ -118,7 +118,7 @@
         <a href="{{ url('/resident/payment') }}" class="nav-link"><i class="fas fa-money-bill"></i> Accessory Payments</a>
         <a href="{{ url('/resident/feedback') }}" class="nav-link"><i class="fas fa-comment-dots"></i> Feedback</a>
         <a href="{{ url('/resident/notices') }}" class="nav-link"><i class="fas fa-bell"></i> Notices</a>
-        
+        <a href="{{ url('/resident/fine') }}" class="nav-link"><i class="fas fa-gavel text-danger"></i> Fine Payments</a>
        
        
       <!-- <a href="{{ url('/resident/subscription') }}" class="nav-link"><i class="fas fa-clipboard-list"></i> Subscription</a> -->

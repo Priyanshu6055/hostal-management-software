@@ -165,6 +165,9 @@
     <i class="bi bi-person-plus"></i> Send Aceessory
     </a>
    
+   <a class="nav-link" href="{{ url('/admin/fine') }}" id="adminAssignFine">
+        <i class="bi bi-cash-coin"></i> Assign Fine
+    </a>
 
 
 
