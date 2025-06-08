@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Guest;
 use Exception;
+use App\Models\Guest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\GuestAccessory;
@@ -17,7 +17,8 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class GuestController extends Controller
 {
- public function register(Request $request)
+
+    public function register(Request $request)
     {
         try {
             $validatedData = $request->validate([
@@ -103,7 +104,6 @@ class GuestController extends Controller
                 'data' => $guest,
                 'errors' => null
             ], 201);
-
         } catch (ValidationException $e) {
             // Rollback the transaction on validation failure
             DB::rollBack();
@@ -128,34 +128,198 @@ class GuestController extends Controller
     }
 
 
+    // public function getGuestTotalAmount(Request $request, $guest_id)
+    // {
+    //     try {
+    //         $guest = Guest::findOrFail($guest_id);
+
+    //         $months = $guest->months ?? 1;
+
+    //         $guestAccessories = GuestAccessory::where('guest_id', $guest_id)->get();
+    //         $accessoryTotal = $guestAccessories->sum('total_amount');
+    //         $accessoryHeadIds = $guestAccessories->pluck('accessory_head_id');
+
+    //         $hostelFeePerMonth = Fee::whereHas('feeHead', fn($q) => $q->where('name', 'Hostel Fee'))
+    //             ->where('is_active', true)
+    //             ->latest('from_date')
+    //             ->value('amount') ?? 0;
+
+    //         $messFeePerMonth = Fee::whereHas('feeHead', fn($q) => $q->where('name', 'Mess Fee'))
+    //             ->where('is_active', true)
+    //             ->latest('from_date')
+    //             ->value('amount') ?? 0;
+
+    //         $cautionMoney = Fee::whereHas('feeHead', fn($q) => $q->where('name', 'Caution Money'))
+    //             ->where('is_active', true)
+    //             ->latest('from_date')
+    //             ->value('amount') ?? 0;
+
+    //         $hostelFee = $hostelFeePerMonth * $months;
+    //         $messFee = $messFeePerMonth * $months;
+
+    //         $finalTotal = $accessoryTotal + $hostelFee + $messFee + $cautionMoney;
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Guest total amount fetched successfully.',
+    //             'data' => [
+    //                 'guest_id' => $guest_id,
+    //                 'months' => $months,
+    //                 'total_accessory_amount' => $accessoryTotal,
+    //                 'hostel_fee' => $hostelFee + $messFee,
+    //                 'caution_money' => $cautionMoney,
+    //                 'final_total_amount' => $finalTotal,
+    //                 'accessory_head_ids' => $accessoryHeadIds,
+    //             ],
+    //             'errors' => null
+    //         ]);
+    //     } catch (ModelNotFoundException $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Guest not found',
+    //             'data' => null,
+    //             'errors' => null
+    //         ], 404);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Failed to fetch data',
+    //             'data' => null,
+    //             'errors' => ['exception' => $e->getMessage()]
+    //         ], 500);
+    //     }
+    // } old method
+
+
+    // public function getGuestTotalAmount(Request $request, $guest_id)
+    // {
+    //     try {
+    //         $guest = Guest::findOrFail($guest_id);
+    //         $months = $guest->months ?? 1;
+
+    //         // Get all guest accessories and total
+    //         $guestAccessories = GuestAccessory::where('guest_id', $guest_id)->get();
+    //         $accessoryTotal = $guestAccessories->sum('total_amount');
+    //         $accessoryHeadIds = $guestAccessories->pluck('accessory_head_id');
+
+    //         $hostelFee = 0;
+    //         $messFee = 0;
+    //         $cautionMoney = 0;
+    //         $waiverFeeUpdated = false;
+
+    //         // If waiver is approved, pull from fee_exceptions
+    //         if ($guest->status === 'waiver_approved') {
+    //             $feeException = \App\Models\FeeException::where('guest_id', $guest_id)->first();
+
+    //             if ($feeException) {
+    //                 $hostelFee = $feeException->hostel_fee ?? 0;
+    //                 $cautionMoney = $feeException->caution_money ?? 0;
+    //                 $waiverFeeUpdated = true;
+    //             }
+    //         }
+
+    //         // If not waiver_approved or exception not found, use regular fee table
+    //         if (!$waiverFeeUpdated) {
+    //             $hostelFeePerMonth = Fee::whereHas('feeHead', fn($q) => $q->where('name', 'Hostel Fee'))
+    //                 ->where('is_active', true)
+    //                 ->latest('from_date')
+    //                 ->value('amount') ?? 0;
+
+    //             $messFeePerMonth = Fee::whereHas('feeHead', fn($q) => $q->where('name', 'Mess Fee'))
+    //                 ->where('is_active', true)
+    //                 ->latest('from_date')
+    //                 ->value('amount') ?? 0;
+
+    //             $cautionMoney = Fee::whereHas('feeHead', fn($q) => $q->where('name', 'Caution Money'))
+    //                 ->where('is_active', true)
+    //                 ->latest('from_date')
+    //                 ->value('amount') ?? 0;
+
+    //             $hostelFee = $hostelFeePerMonth * $months;
+    //             $messFee = $messFeePerMonth * $months;
+    //         }
+
+    //         $finalTotal = $accessoryTotal + $hostelFee + $messFee + $cautionMoney;
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Guest total amount fetched successfully.',
+    //             'data' => [
+    //                 'guest_id' => $guest_id,
+    //                 'months' => $months,
+    //                 'total_accessory_amount' => $accessoryTotal,
+    //                 'hostel_fee' => $hostelFee + $messFee,
+    //                 'caution_money' => $cautionMoney,
+    //                 'final_total_amount' => $finalTotal,
+    //                 'accessory_head_ids' => $accessoryHeadIds,
+    //                 'waiver_fee_updated' => $waiverFeeUpdated,
+    //             ],
+    //             'errors' => null
+    //         ]);
+    //     } catch (ModelNotFoundException $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Guest not found',
+    //             'data' => null,
+    //             'errors' => null
+    //         ], 404);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Failed to fetch data',
+    //             'data' => null,
+    //             'errors' => ['exception' => $e->getMessage()]
+    //         ], 500);
+    //     }
+    // } old without days
+
+
     public function getGuestTotalAmount(Request $request, $guest_id)
     {
         try {
-            $guest = Guest::findOrFail($guest_id);
+            $guest = Guest::select('id', 'months', 'days', 'status', 'fee_waiver')->findOrFail($guest_id);
 
             $months = $guest->months ?? 1;
+            $days = $guest->days ?? 0;
 
             $guestAccessories = GuestAccessory::where('guest_id', $guest_id)->get();
             $accessoryTotal = $guestAccessories->sum('total_amount');
             $accessoryHeadIds = $guestAccessories->pluck('accessory_head_id');
 
-            $hostelFeePerMonth = Fee::whereHas('feeHead', fn($q) => $q->where('name', 'Hostel Fee'))
-                ->where('is_active', true)
-                ->latest('from_date')
-                ->value('amount') ?? 0;
+            $hostelFee = 0;
+            $messFee = 0;
+            $cautionMoney = 0;
+            $waiverFeeUpdated = false;
 
-            $messFeePerMonth = Fee::whereHas('feeHead', fn($q) => $q->where('name', 'Mess Fee'))
-                ->where('is_active', true)
-                ->latest('from_date')
-                ->value('amount') ?? 0;
+            if ($guest->status === 'waiver_approved') {
+                $feeException = \App\Models\FeeException::where('guest_id', $guest_id)->first();
 
-            $cautionMoney = Fee::whereHas('feeHead', fn($q) => $q->where('name', 'Caution Money'))
-                ->where('is_active', true)
-                ->latest('from_date')
-                ->value('amount') ?? 0;
+                if ($feeException) {
+                    $hostelFee = $feeException->hostel_fee ?? 0;
+                    $cautionMoney = $feeException->caution_money ?? 0;
+                    $waiverFeeUpdated = true;
+                }
+            }
 
-            $hostelFee = $hostelFeePerMonth * $months;
-            $messFee = $messFeePerMonth * $months;
+            if (!$waiverFeeUpdated) {
+                $hostelFeePerMonth = Fee::whereHas('feeHead', fn($q) => $q->where('name', 'Hostel Fee'))
+                    ->where('is_active', true)
+                    ->latest('from_date')
+                    ->value('amount') ?? 0;
+
+                $messFeePerMonth = Fee::whereHas('feeHead', fn($q) => $q->where('name', 'Mess Fee'))
+                    ->where('is_active', true)
+                    ->latest('from_date')
+                    ->value('amount') ?? 0;
+
+                $cautionMoney = Fee::whereHas('feeHead', fn($q) => $q->where('name', 'Caution Money'))
+                    ->where('is_active', true)
+                    ->latest('from_date')
+                    ->value('amount') ?? 0;
+
+                $hostelFee = $hostelFeePerMonth * $months;
+                $messFee = $messFeePerMonth * $months;
+            }
 
             $finalTotal = $accessoryTotal + $hostelFee + $messFee + $cautionMoney;
 
@@ -163,13 +327,15 @@ class GuestController extends Controller
                 'success' => true,
                 'message' => 'Guest total amount fetched successfully.',
                 'data' => [
-                    'guest_id' => $guest_id,
+                    'guest_id' => $guest->id,
                     'months' => $months,
+                    'days' => $days,
                     'total_accessory_amount' => $accessoryTotal,
                     'hostel_fee' => $hostelFee + $messFee,
                     'caution_money' => $cautionMoney,
                     'final_total_amount' => $finalTotal,
                     'accessory_head_ids' => $accessoryHeadIds,
+                    'waiver_fee_updated' => $waiverFeeUpdated,
                 ],
                 'errors' => null
             ]);
@@ -190,28 +356,33 @@ class GuestController extends Controller
         }
     }
 
+
+
+
     public function pendingGuests()
     {
         try {
+            // Only fetch guests whose status is NOT 'paid' or 'rejected'
             $guests = Guest::with([
                 'accessories.accessoryHead:id,name'
-            ])->get();
+            ])->whereNotIn('status', ['paid', 'approved', 'rejected'])->get();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Guests with accessories fetched successfully',
+                'message' => 'Pending guests with accessories fetched successfully',
                 'data' => $guests,
                 'errors' => null
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to fetch guests with accessories',
+                'message' => 'Failed to fetch pending guests',
                 'data' => null,
                 'errors' => ['exception' => $e->getMessage()]
             ], 500);
         }
     }
+
 
     public function getPaidGuests()
     {
@@ -243,10 +414,11 @@ class GuestController extends Controller
         }
     }
 
+
     public function getApprovedOrRejectedGuests()
     {
         try {
-            $guests = Guest::whereIn('status', ['approved', 'rejected', 'pending'])->get();
+            $guests = Guest::whereIn('status', ['approved', 'rejected', 'pending','waiver_approved'])->get();
 
             return response()->json([
                 'success' => true,
@@ -264,4 +436,13 @@ class GuestController extends Controller
         }
     }
 
+
+    public function showPendingGuests()
+    {
+        $guests = Guest::with(['accessories.accessoryHead:id,name'])
+            ->whereNotIn('status', ['paid', 'approved', 'rejected'])
+            ->get();
+
+        return view('admin.Pending_guest', compact('guests'));
+    }
 }

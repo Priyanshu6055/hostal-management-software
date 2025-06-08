@@ -1,6 +1,7 @@
 <?php
 
 use Carbon\Carbon;
+use App\Services\SmsService;
 use Illuminate\Http\Request;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Support\Facades\Route;
@@ -34,6 +35,11 @@ use App\Models\User;
 use App\Models\Payment;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RoomChangeMessageController;
+use App\Http\Controllers\FeeExceptionController;
+use App\Notifications\CustomAppNotification;
+use Illuminate\Support\Facades\Validator;
+use App\Services\MailService;
+
 
 
 
@@ -273,6 +279,9 @@ Route::post('/guests', [GuestController::class, 'register']); // Guest registers
 Route::get('/guests/pending', [GuestController::class, 'pendingGuests']);
 Route::get('/admin/check-rooms', [AdminController::class, 'checkAvailableRooms']); // Check available rooms
 Route::post('/admin/approved-guest', [AdminController::class, 'adminApproved']); // Send payment request
+Route::post('/admin/approved-waiver', [FeeExceptionController::class, 'adminWaiverApproved']); // Send payment request
+Route::post('/admin/modify-waiver/payments', [FeeExceptionController::class, 'store']); // Send payment request
+
 Route::post('/guest-payments', [PaymentController::class, 'guestPayment']); // Guest makes payment
 Route::post('/admin/assign-bed', [ResidentController::class, 'assignBed']); // Assign bed to resident
 Route::get('/guest/{id}/total-amount', [GuestController::class, 'getGuestTotalAmount']);
@@ -364,3 +373,91 @@ Route::get('/get-payment-id', function (Request $request) {
 
 Route::get('/messes', [MessController::class, 'index']);
 Route::get('/guests/paid', [GuestController::class, 'getPaidGuests']);
+
+
+
+
+
+
+//In app notifications
+
+Route::post('/send-notification', function (Request $request) {
+    $request->validate([
+        'user_id' => 'required|exists:users,id',
+        'message' => 'required|string'
+    ]);
+
+    $user = User::find($request->user_id);
+    $user->notify(new CustomAppNotification($request->message));
+
+    return response()->json(['success' => true, 'message' => 'Notification sent.']);
+});
+
+
+
+
+
+
+
+//AWS SMS Service for test
+
+Route::post('/send-sms', function (Request $request) {
+    $validator = Validator::make($request->all(), [
+        'phone' => 'required|string',
+        'message' => 'required|string|max:160'
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation failed',
+            'errors' => $validator->errors(),
+        ], 422);
+    }
+
+    $response = SmsService::send($request->phone, $request->message);
+
+    return response()->json([
+        'success' => $response['success'],
+        'message' => $response['success'] ? 'SMS sent successfully' : 'SMS failed to send',
+        'data' => $response,
+    ]);
+});
+
+
+
+
+//AWS Mail Service for test
+
+Route::post('/send-mail', function (Request $request) {
+    $validator = Validator::make($request->all(), [
+        'email' => 'required|email',
+        'subject' => 'required|string',
+        'name' => 'required|string',
+        'body' => 'required|string',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation failed',
+            'errors' => $validator->errors()
+        ], 422);
+    }
+
+    $response = MailService::send(
+        $request->email,
+        $request->subject,
+        'emails.hostel_welcome',
+        [
+            'name' => $request->name,
+            'body' => $request->body
+        ]
+    );
+
+    return response()->json([
+        'success' => $response['success'],
+        'message' => $response['message'] ?? 'Mail operation done',
+        'data' => $response
+    ]);
+});

@@ -18,6 +18,7 @@ class CreateGuestsTable extends Migration
             $table->string('fathers_name');
             $table->string('mothers_name');
             $table->unsignedTinyInteger('months')->default(3)->comment('Duration of stay in months');
+            $table->unsignedTinyInteger('days')->nullable(); //addded
             $table->string('local_guardian_name');
             $table->string('emergency_no');
             $table->string('room_preference');

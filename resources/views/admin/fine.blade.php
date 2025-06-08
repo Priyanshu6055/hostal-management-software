@@ -4,6 +4,7 @@
 <div class="container mt-5">
     <h2 class="text-xl font-semibold mb-4">Assign Fine to Resident</h2>
 
+    <!-- Success & Error Alerts -->
     <div id="success-message" class="alert alert-success d-none"></div>
     <div id="error-message" class="alert alert-danger d-none"></div>
 
@@ -15,17 +16,11 @@
             </select>
         </div>
 
-        <div class="mb-3">
-            <label for="fee_type" class="form-label">Fee Type</label>
-            <select name="fee_type" id="fee_type" class="form-control" required>
-                <option value="">Select Fee Type</option>
-            </select>
-        </div>
-
-        <div class="mb-3">
-            <label for="subscription_type" class="form-label">Subscription Type</label>
-            <input type="text" name="subscription_type" id="subscription_type_input" class="form-control" readonly>
-        </div>
+        <!-- Hidden Inputs -->
+        <input type="hidden" name="fee_head_id" id="fee_head_id">
+        <input type="hidden" name="subscription_type" id="subscription_type_input" value="Other">
+        <input type="hidden" name="payment_method" value="Null">
+        <input type="hidden" name="created_by" value="{{ auth()->user()->id }}">
 
         <div class="mb-3">
             <label for="custom_amount" class="form-label">Custom Amount</label>
@@ -33,25 +28,9 @@
         </div>
 
         <div class="mb-3">
-            <label for="payment_method" class="form-label">Payment Method</label>
-            <select name="payment_method" class="form-control" required>
-                <option value="">Select Method</option>
-                <option value="Cash">Cash</option>
-                <option value="UPI">UPI</option>
-                <option value="Bank Transfer">Bank Transfer</option>
-                <option value="Card">Card</option>
-                <option value="Other">Other</option>
-                <option value="Null">Null</option>
-            </select>
-        </div>
-
-        <div class="mb-3">
             <label for="remarks" class="form-label">Remarks (optional)</label>
             <textarea name="remarks" class="form-control"></textarea>
         </div>
-
-        <input type="hidden" name="fee_head_id" id="fee_head_id">
-        <input type="hidden" name="created_by" value="{{ auth()->user()->id }}">
 
         <button type="submit" class="btn btn-primary">Submit</button>
     </form>
@@ -65,9 +44,8 @@
 <script>
     $(document).ready(async function () {
         const residentSelect = $('#resident_id');
-        const feeTypeSelect = $('#fee_type');
-        const subscriptionTypeInput = $('#subscription_type_input');
         const feeHeadIdInput = $('#fee_head_id');
+        const subscriptionTypeInput = $('#subscription_type_input');
 
         try {
             // Fetch residents
@@ -81,33 +59,24 @@
 
             residentSelect.select2({ placeholder: "Select Resident", width: '100%' });
 
-            // Fetch all fees
+            // Fetch fee types
             const feeRes = await fetch("{{ url('/api/fees') }}");
             const feeData = await feeRes.json();
 
-            feeTypeSelect.html('<option value="">Select Fee Type</option>');
-            feeData.data.forEach(fee => {
-                if (fee.is_active === 1) {
-                    feeTypeSelect.append(`<option value="${fee.name}" data-id="${fee.fee_head_id}">${fee.name}</option>`);
-                }
-            });
-
-            // On Fee Type change
-            feeTypeSelect.on('change', function () {
-                const selectedOption = $(this).find('option:selected');
-                const feeType = selectedOption.val();
-                const feeHeadId = selectedOption.data('id');
-
-                subscriptionTypeInput.val(feeType);
-                feeHeadIdInput.val(feeHeadId);
-            });
+            const otherFee = feeData.data.find(fee => fee.name === "Other");
+            if (otherFee) {
+                feeHeadIdInput.val(otherFee.fee_head_id);
+                subscriptionTypeInput.val("Other");
+            } else {
+                $('#error-message').removeClass('d-none').text('Fee type "Other" not found.');
+            }
 
         } catch (err) {
             console.error(err);
             $('#error-message').removeClass('d-none').text('Failed to load resident or fee type data.');
         }
 
-        // Form Submit
+        // Handle form submission
         $('#subscriptionForm').on('submit', async function (e) {
             e.preventDefault();
 
@@ -117,7 +86,7 @@
                 subscription_type: $('#subscription_type_input').val(),
                 custom_amount: parseFloat($('input[name="custom_amount"]').val()),
                 remarks: $('textarea[name="remarks"]').val(),
-                payment_method: $('select[name="payment_method"]').val(),
+                payment_method: 'Null',
                 created_by: $('input[name="created_by"]').val()
             };
 
@@ -132,14 +101,12 @@
                 });
 
                 const result = await res.json();
-                if (res.ok) {
+
+                if (res.ok && result.success) {
                     $('#success-message').removeClass('d-none').text(result.message || 'Fine assigned successfully.');
                     $('#error-message').addClass('d-none');
                     $('#subscriptionForm')[0].reset();
                     $('#resident_id').val(null).trigger('change');
-                    $('#fee_type').val('').trigger('change');
-                    subscriptionTypeInput.val('');
-                    feeHeadIdInput.val('');
                 } else {
                     $('#error-message').removeClass('d-none').text(result.message || 'Assignment failed.');
                     $('#success-message').addClass('d-none');

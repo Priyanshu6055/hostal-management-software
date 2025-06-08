@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -21,11 +20,12 @@ class Guest extends Model
         'emergency_no',
         'room_preference',
         'food_preference',
-        'fee_waiver', 
+        'fee_waiver',
         'remarks',
         'status',
         'months',
-        'attachment_path'
+        'attachment_path',
+        'days'
     ];
 
     public function accessory()
@@ -37,5 +37,12 @@ class Guest extends Model
         return $this->belongsToMany(Accessory::class, 'guest_accessory', 'guest_id', 'accessory_head_id')
             ->withPivot(['price', 'total_amount', 'from_date', 'to_date'])
             ->with('accessoryHead');
+    }
+
+    // app/Models/Guest.php
+
+    public function feeException()
+    {
+        return $this->hasOne(FeeException::class);
     }
 }

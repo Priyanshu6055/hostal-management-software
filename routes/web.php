@@ -257,3 +257,5 @@ Route::get('/admin/fine', function () {
 Route::get('/resident/fine', function () {
     return view('resident.fine');
 });
+
+

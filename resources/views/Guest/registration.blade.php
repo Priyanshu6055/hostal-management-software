@@ -95,6 +95,11 @@
                     </div>
                     <div id="feeWaiverError" class="invalid-feedback text-red-500 text-xs mt-1"></div>
                 </div>
+<div class="col-span-1" id="waiverDocumentFieldGroup">
+    <label for="waiver_document" class="block text-gray-700 text-sm font-medium mb-1">Fee Waiver Document <span class="required" id="waiverDocumentRequiredAsterisk"></span></label>
+    <input type="file" name="waiver_document" id="waiver_document" class="form-control w-full p-2 border border-gray-300 rounded-md focus:ring focus:ring-blue-200 focus:border-blue-500">
+    <div id="waiverDocumentError" class="invalid-feedback text-red-500 text-xs mt-1"></div>
+</div>
                 <div class="col-span-1" id="remarksFieldGroup">
                     <label for="remarks" class="block text-gray-700 text-sm font-medium mb-1">Remarks <span class="required" id="remarksRequiredAsterisk"></span></label>
                     <textarea name="remarks" id="remarks" rows="3" class="form-control w-full p-2 border border-gray-300 rounded-md focus:ring focus:ring-blue-200 focus:border-blue-500"></textarea>
@@ -203,9 +208,22 @@
         </form>
     </div>
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 <script>
     let defaultAccessoryHeadIds = [];
-    let allAccessories = [];
+    let allAccessories = []; // This will hold the raw accessory data from the API
     const errorMessageDiv = document.getElementById("errorMessage");
     const errorMessageText = document.getElementById("errorMessageText");
     const registrationForm = document.getElementById("registrationForm");
@@ -217,12 +235,14 @@
     const additionalAccessoriesDiv = document.getElementById("additional-accessories");
     const agreeCheckbox = document.getElementById("agree");
 
-    // New elements for fee_waiver and remarks
+    // New elements for fee_waiver, remarks, and waiver_document
     const feeWaiverCheckbox = document.getElementById('fee_waiver');
     const remarksFieldGroup = document.getElementById('remarksFieldGroup');
     const remarksTextarea = document.getElementById('remarks');
     const remarksRequiredAsterisk = document.getElementById('remarksRequiredAsterisk');
-
+    const waiverDocumentFieldGroup = document.getElementById('waiverDocumentFieldGroup');
+    const waiverDocumentInput = document.getElementById('waiver_document');
+    const waiverDocumentRequiredAsterisk = document.getElementById('waiverDocumentRequiredAsterisk');
 
     // Map field names to their error message div elements
     const errorMessages = {
@@ -238,9 +258,9 @@
         room_preference: document.getElementById('bedPreferenceError'),
         months: document.getElementById('stayDurationError'),
         agree: document.getElementById('agreeError'),
-        // New error message divs
-        fee_waiver: document.getElementById('feeWaiverError'),
-        remarks: document.getElementById('remarksError')
+        fee_waiver: document.getElementById('feeWaiverError'), // This might not have a direct error div if it's just a checkbox
+        remarks: document.getElementById('remarksError'),
+        waiver_document: document.getElementById('waiverDocumentError')
     };
 
     /**
@@ -252,18 +272,17 @@
         const errorDiv = errorMessages[fieldName];
         if (errorDiv) {
             errorDiv.textContent = message;
-            // Select all inputs with the given name for cases like radio buttons
+            // Target elements by their name attribute for consistency
             const inputElements = registrationForm.querySelectorAll(`[name="${fieldName}"]`);
             if (inputElements.length > 0) {
-                // For radios/checkboxes, add 'is-invalid' to each input.
-                // For others, add it to the first found element.
-                if (inputElements[0].type === 'radio' || inputElements[0].type === 'checkbox') {
+                // For radio/checkbox/file inputs, add class to all, otherwise just the first
+                if (inputElements[0].type === 'radio' || inputElements[0].type === 'checkbox' || inputElements[0].type === 'file') {
                     inputElements.forEach(input => input.classList.add('is-invalid'));
                 } else {
                     inputElements[0].classList.add('is-invalid');
                 }
             } else {
-                // Fallback for elements like textarea if not selected by name query
+                // Fallback for elements without a 'name' attribute but have an 'id'
                 const specificElement = document.getElementById(fieldName);
                 if (specificElement) {
                     specificElement.classList.add('is-invalid');
@@ -282,7 +301,7 @@
             errorDiv.textContent = '';
             const inputElements = registrationForm.querySelectorAll(`[name="${fieldName}"]`);
             if (inputElements.length > 0) {
-                if (inputElements[0].type === 'radio' || inputElements[0].type === 'checkbox') {
+                if (inputElements[0].type === 'radio' || inputElements[0].type === 'checkbox' || inputElements[0].type === 'file') {
                     inputElements.forEach(input => input.classList.remove('is-invalid'));
                 } else {
                     inputElements[0].classList.remove('is-invalid');
@@ -297,21 +316,33 @@
     }
 
     /**
-     * Toggles the visibility and required status of the remarks field.
+     * Toggles the visibility and required status of the remarks field and waiver document field.
      */
-    function toggleRemarksField() {
+    function toggleConditionalFields() {
         if (feeWaiverCheckbox.checked) {
             remarksFieldGroup.classList.remove('hidden');
             remarksTextarea.required = true;
-            remarksRequiredAsterisk.textContent = '*'; // Add asterisk
+            remarksRequiredAsterisk.textContent = '*';
+
+            waiverDocumentFieldGroup.classList.remove('hidden');
+            waiverDocumentInput.required = true;
+            waiverDocumentRequiredAsterisk.textContent = '*';
         } else {
             remarksFieldGroup.classList.add('hidden');
             remarksTextarea.required = false;
-            remarksTextarea.value = ''; // Clear remarks when fee waiver is unchecked
-            clearErrorMessage('remarks'); // Clear any remarks error
-            remarksRequiredAsterisk.textContent = ''; // Remove asterisk
+            remarksTextarea.value = '';
+            clearErrorMessage('remarks');
+            remarksRequiredAsterisk.textContent = '';
+
+            waiverDocumentFieldGroup.classList.add('hidden');
+            waiverDocumentInput.required = false;
+            waiverDocumentInput.value = ''; // Clear selected file
+            // Note: For file inputs, setting value to '' might not trigger 'change' on all browsers.
+            // Consider recreating the input or resetting the form if clearing the file is critical.
+            clearErrorMessage('waiver_document');
+            waiverDocumentRequiredAsterisk.textContent = '';
         }
-        checkFormValidity(); // Re-check form validity when this changes
+        checkFormValidity();
     }
 
     /**
@@ -320,8 +351,8 @@
     function checkFormValidity() {
         let allValid = true;
 
-        // Check all required input/select/textarea fields
-        const requiredElements = registrationForm.querySelectorAll('input[required]:not([type="radio"]):not([type="checkbox"]), select[required], textarea[required]');
+        // Check all required input/select/textarea fields (excluding radios/checkboxes/files handled separately)
+        const requiredElements = registrationForm.querySelectorAll('input[required]:not([type="radio"]):not([type="checkbox"]):not([type="file"]), select[required], textarea[required]');
         requiredElements.forEach(element => {
             if (!element.checkValidity()) {
                 allValid = false;
@@ -344,27 +375,34 @@
             allValid = false;
         }
 
-        // Conditional client-side validation for remarks
-        if (feeWaiverCheckbox.checked && remarksTextarea.value.trim() === '') {
-            allValid = false;
-            // The blur/input event listeners for remarks will handle the error message display
-            // This just ensures the submit button stays disabled
+        // Conditional client-side validation for remarks and waiver document
+        if (feeWaiverCheckbox.checked) {
+            if (remarksTextarea.required && remarksTextarea.value.trim() === '') {
+                allValid = false;
+            }
+            if (waiverDocumentInput.required && waiverDocumentInput.files.length === 0) {
+                allValid = false;
+            }
         }
 
         submitBtn.disabled = !allValid;
     }
 
     document.addEventListener("DOMContentLoaded", function () {
-        // Initial setup for remarks field (hidden by default)
+        // Initial setup for remarks and waiver document fields
         remarksFieldGroup.classList.add('hidden');
-        remarksTextarea.required = false; // Ensure it's not required initially
-        remarksRequiredAsterisk.textContent = ''; // No asterisk initially
-        
+        remarksTextarea.required = false;
+        remarksRequiredAsterisk.textContent = '';
+
+        waiverDocumentFieldGroup.classList.add('hidden');
+        waiverDocumentInput.required = false;
+        waiverDocumentRequiredAsterisk.textContent = '';
+
         // Add event listener for fee_waiver checkbox
-        feeWaiverCheckbox.addEventListener('change', toggleRemarksField);
-        
-        // Add event listeners for real-time validation feedback for existing fields
-        const generalFormElements = registrationForm.querySelectorAll('input:not([type="radio"]):not([type="checkbox"]), select');
+        feeWaiverCheckbox.addEventListener('change', toggleConditionalFields);
+
+        // Add event listeners for real-time validation feedback
+        const generalFormElements = registrationForm.querySelectorAll('input:not([type="radio"]):not([type="checkbox"]):not([type="file"]), select, textarea'); // Include textarea here
         generalFormElements.forEach(element => {
             element.addEventListener('input', () => {
                 if (element.checkValidity()) {
@@ -382,9 +420,8 @@
             });
         });
 
-        // Specific event listeners for remarks textarea
+        // Specific event listeners for remarks textarea (re-added for clarity, though covered by general)
         remarksTextarea.addEventListener('input', () => {
-            // Only validate if required (i.e., fee_waiver is checked)
             if (remarksTextarea.required) {
                 if (remarksTextarea.value.trim() === '') {
                     displayErrorMessage('remarks', 'Remarks are required when fee waiver is applied.');
@@ -392,13 +429,12 @@
                     clearErrorMessage('remarks');
                 }
             } else {
-                clearErrorMessage('remarks'); // Always clear if not required
+                clearErrorMessage('remarks');
             }
             checkFormValidity();
         });
 
         remarksTextarea.addEventListener('blur', () => {
-            // Only validate if required (i.e., fee_waiver is checked)
             if (remarksTextarea.required) {
                 if (remarksTextarea.value.trim() === '') {
                     displayErrorMessage('remarks', 'Remarks are required when fee waiver is applied.');
@@ -406,7 +442,34 @@
                     clearErrorMessage('remarks');
                 }
             } else {
-                clearErrorMessage('remarks'); // Always clear if not required
+                clearErrorMessage('remarks');
+            }
+            checkFormValidity();
+        });
+
+        // Specific event listeners for waiver_document input
+        waiverDocumentInput.addEventListener('change', () => {
+            if (waiverDocumentInput.required) {
+                if (waiverDocumentInput.files.length === 0) {
+                    displayErrorMessage('waiver_document', 'A document is required when fee waiver is applied.');
+                } else {
+                    clearErrorMessage('waiver_document');
+                }
+            } else {
+                clearErrorMessage('waiver_document');
+            }
+            checkFormValidity();
+        });
+
+        waiverDocumentInput.addEventListener('blur', () => {
+            if (waiverDocumentInput.required) {
+                if (waiverDocumentInput.files.length === 0) {
+                    displayErrorMessage('waiver_document', 'A document is required when fee waiver is applied.');
+                } else {
+                    clearErrorMessage('waiver_document');
+                }
+            } else {
+                clearErrorMessage('waiver_document');
             }
             checkFormValidity();
         });
@@ -418,12 +481,24 @@
                 clearErrorMessage('food_preference');
                 checkFormValidity();
             });
+            radio.addEventListener('blur', () => { // Add blur for radios
+                if (!document.querySelector('input[name="food_preference"]:checked')) {
+                    displayErrorMessage('food_preference', 'Please select your food preference.');
+                }
+                checkFormValidity();
+            });
         });
 
         const roomRadios = document.querySelectorAll('input[name="room_preference"]');
         roomRadios.forEach(radio => {
             radio.addEventListener('change', () => {
                 clearErrorMessage('room_preference');
+                checkFormValidity();
+            });
+            radio.addEventListener('blur', () => { // Add blur for radios
+                if (!document.querySelector('input[name="room_preference"]:checked')) {
+                    displayErrorMessage('room_preference', 'Please select your bed preference.');
+                }
                 checkFormValidity();
             });
         });
@@ -437,6 +512,14 @@
             }
             checkFormValidity();
         });
+
+        agreeCheckbox.addEventListener("blur", () => { // Add blur for checkbox
+            if (!agreeCheckbox.checked) {
+                displayErrorMessage('agree', 'You must agree to the terms and conditions.');
+            }
+            checkFormValidity();
+        });
+
 
         // Initial check for button state
         checkFormValidity();
@@ -467,7 +550,7 @@
                     return res.json();
                 })
                 .then(data => {
-                    allAccessories = data.data;
+                    allAccessories = data.data; // Ensure data.data is the array of accessories
                     let defaultAccessoriesHTML = '';
                     let additionalAccessoriesHTML = '';
 
@@ -476,9 +559,11 @@
                         additionalAccessoriesHTML = '<p class="text-gray-500">No additional accessories available.</p>';
                     } else {
                         allAccessories.forEach(accessory => {
+                            // Ensure accessory.price and accessory.accessory_head are correctly structured
+                            // from your API response.
                             const price = parseFloat(accessory.price);
                             if (price === 0) {
-                                defaultAccessoryHeadIds.push(accessory.accessory_head.id);
+                                defaultAccessoryHeadIds.push(accessory.accessory_head.id); // Push the ID of the accessory head
                                 defaultAccessoriesHTML += `
                                     <div class="text-gray-700 py-1">${accessory.accessory_head.name}</div>
                                 `;
@@ -512,8 +597,8 @@
 
             // Client-side validation before submission
             let isValid = true;
-            // Re-check all required fields on submit to catch any missed real-time validations
-            const requiredFieldsOnSubmit = registrationForm.querySelectorAll('input[required]:not([type="radio"]):not([type="checkbox"]), select[required], textarea[required]');
+            // Re-check all required fields on submit
+            const requiredFieldsOnSubmit = registrationForm.querySelectorAll('input[required]:not([type="radio"]):not([type="checkbox"]):not([type="file"]), select[required], textarea[required]');
             requiredFieldsOnSubmit.forEach(field => {
                 if (!field.checkValidity()) {
                     isValid = false;
@@ -540,82 +625,99 @@
                 displayErrorMessage('agree', 'You must agree to the terms and conditions.');
             }
 
-            // --- NEW: Client-side validation for remarks on submit based on fee_waiver ---
-            if (feeWaiverCheckbox.checked && remarksTextarea.value.trim() === '') {
-                isValid = false;
-                displayErrorMessage('remarks', 'Remarks are required when fee waiver is applied.');
+            // Conditional validation for remarks and waiver document
+            if (feeWaiverCheckbox.checked) {
+                if (remarksTextarea.value.trim() === '') {
+                    isValid = false;
+                    displayErrorMessage('remarks', 'Remarks are required when fee waiver is applied.');
+                }
+                if (waiverDocumentInput.files.length === 0) {
+                    isValid = false;
+                    displayErrorMessage('waiver_document', 'A document is required when fee waiver is applied.');
+                }
             }
-            // --- END NEW ---
 
             if (!isValid) {
-                // If client-side validation fails, re-enable button and stop submission
                 submitBtn.disabled = false;
                 loadingDiv.classList.add("hidden");
-                return;
+                return; // Stop submission if client-side validation fails
             }
 
             // Disable the submit button and show loading indicator
             submitBtn.disabled = true;
             loadingDiv.classList.remove("hidden");
-            registrationForm.classList.remove('hidden'); // Ensure form is visible if it was hidden by success message
+            registrationForm.classList.remove('hidden');
             registrationSuccessContainer.classList.add('hidden');
             approvalMessageContainer.classList.add('hidden');
 
             const formData = new FormData(this);
-            const selectedAccessories = Array.from(this.querySelectorAll('input[name="accessories[]"]:checked'))
-                .map(cb => cb.value);
 
-            // Correctly construct the payload for fee_waiver and remarks
-            const payload = {
-                ...Object.fromEntries(formData.entries()),
-                accessory_head_ids: [...defaultAccessoryHeadIds, ...selectedAccessories],
-                // Explicitly set fee_waiver as a boolean
-                fee_waiver: feeWaiverCheckbox.checked, // Sends true or false
-                remarks: remarksTextarea.value.trim() // Ensure remarks value is trimmed
-            };
+            // Collect all accessory_head_ids (default free ones + user-selected paid ones)
+            const allAccessoryIds = [...defaultAccessoryHeadIds, ...Array.from(this.querySelectorAll('input[name="accessories[]"]:checked')).map(cb => cb.value)];
 
-            // Remove fee_waiver and remarks from payload if they were implicitly added
-            // by formData.entries(). This ensures our explicitly set boolean/string is used.
-            // formData.entries() might include unchecked checkbox as empty string if it has a name,
-            // or include textarea even if hidden.
-            if (payload.hasOwnProperty('fee_waiver') && typeof payload.fee_waiver === 'string') {
-                delete payload.fee_waiver;
+            // Clear any pre-existing 'accessory_head_ids' from formData if it was populated by a hidden input
+            if (formData.has('accessory_head_ids')) {
+                formData.delete('accessory_head_ids');
             }
-            if (payload.hasOwnProperty('remarks') && typeof payload.remarks === 'string') {
-                delete payload.remarks;
-            }
-            // Re-add them cleanly to ensure correct type/value
-            payload.fee_waiver = feeWaiverCheckbox.checked;
-            payload.remarks = remarksTextarea.value.trim();
 
+            // Append each accessory_head_id individually to formData as 'accessory_head_ids[]'
+            // This is the correct way to send an array to Laravel via FormData
+            allAccessoryIds.forEach(id => {
+                formData.append('accessory_head_ids[]', id);
+            });
+
+            // Explicitly set fee_waiver and remarks based on your conditional logic
+            formData.set('fee_waiver', feeWaiverCheckbox.checked ? '1' : '0');
+            formData.set('remarks', remarksTextarea.value.trim());
+
+            // Handle waiver document:
+            // Append if fee waiver is checked AND a file is selected
+            if (feeWaiverCheckbox.checked && waiverDocumentInput.files.length > 0) {
+                formData.append('waiver_document', waiverDocumentInput.files[0]);
+            } else if (!feeWaiverCheckbox.checked) {
+                // If fee waiver is NOT checked, ensure the waiver_document field is removed from FormData
+                // in case it was somehow added, or to prevent sending empty file data.
+                formData.delete('waiver_document');
+            }
+            // If fee_waiver is checked but no file is selected, the server-side validation will catch it
+            // because of 'required_if:fee_waiver,true'.
+
+            // Debugging FormData content (uncomment to see what's being sent)
+            // for (let pair of formData.entries()) {
+            //     console.log(pair[0]+ ': ' + pair[1]);
+            // }
 
             fetch("{{ url('/api/guests') }}", {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json",
+                    // **CRITICAL:** Do NOT set 'Content-Type': 'application/json' when sending FormData.
+                    // The browser sets it automatically to 'multipart/form-data' with the correct boundary.
                     "Accept": "application/json",
                     "X-CSRF-TOKEN": '{{ csrf_token() }}' // Laravel CSRF token
                 },
-                body: JSON.stringify(payload)
+                body: formData // Send FormData directly
             })
             .then(res => {
+                // Check if the response was NOT successful (status codes 4xx or 5xx)
                 if (!res.ok) {
                     console.error(`Error submitting form: ${res.status} - ${res.statusText}`);
+                    // Parse error details from the response body
                     return res.json().then(errData => {
-                        throw new Error(JSON.stringify(errData));
+                        throw new Error(JSON.stringify(errData)); // Propagate error data
                     });
                 }
-                return res.json();
+                return res.json(); // If successful, parse the JSON response
             })
             .then(data => {
                 loadingDiv.classList.add("hidden");
-                if (data.message === "Guest registered successfully.") {
+                if (data.success) { // Check for 'success: true' from API
                     registrationForm.classList.add('hidden');
                     registrationSuccessContainer.classList.remove('hidden');
                     setTimeout(() => {
                         window.location.href = "{{ url('/guest?status=success') }}";
                     }, 3000);
                 } else {
+                    // Handle API-level errors (e.g., validation errors returned by Laravel)
                     console.error("Registration failed:", data);
                     errorMessageText.textContent = data.message || "Registration failed. Please check your inputs.";
                     errorMessageDiv.classList.remove("hidden");
@@ -628,13 +730,15 @@
                 }
             })
             .catch(error => {
+                // Catch network errors or errors thrown from the .then(res => ...) block
                 loadingDiv.classList.add("hidden");
                 errorMessageDiv.classList.remove("hidden");
-                console.error("Error during registration:", error);
+                console.error("Error during registration (catch block):", error);
                 submitBtn.disabled = false;
+
                 try {
-                    const errorData = JSON.parse(error.message);
-                    console.error("Server error details:", errorData);
+                    const errorData = JSON.parse(error.message); // Attempt to parse the error message
+                    console.error("Server error details (parsed):", errorData);
                     if (errorData.errors) {
                         for (const key in errorData.errors) {
                             displayErrorMessage(key, errorData.errors[key][0]);
@@ -644,11 +748,12 @@
                     }
                 } catch (e) {
                     errorMessageText.textContent = "An unexpected error occurred. Please try again.";
-                    console.error("Could not parse error response:", error);
+                    console.error("Could not parse error response in catch:", error);
                 }
             });
         });
     });
 </script>
+
 </body>
 </html>

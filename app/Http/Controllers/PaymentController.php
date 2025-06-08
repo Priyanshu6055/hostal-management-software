@@ -27,7 +27,6 @@ use Illuminate\Http\JsonResponse;
 class PaymentController extends Controller
 {
 
-
     public function guestPayment(Request $request)
     {
         try {

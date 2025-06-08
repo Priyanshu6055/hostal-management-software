@@ -29,9 +29,143 @@
         </thead>
         <tbody id="guestList">
             {{-- Updated colspan to 16 for loading/no guests messages (12 original + 3 new + 1 Current Payable) --}}
-            <tr><td colspan="16" class="text-center">Loading pending guests...</td></tr>
+            <tr>
+                <td colspan="16" class="text-center">Loading pending guests...</td>
+            </tr>
         </tbody>
     </table>
+
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+
+    <!-- Edit amount  -->
+    <!-- <div id="editAmountSection" style="display: none;" class="border p-4 mt-4 bg-light rounded">
+        <h5>Edit Payment Amount</h5>
+        <form id="editAmountForm" enctype="multipart/form-data">
+            <input type="hidden" name="guest_id" id="edit_guest_id">
+            <input type="hidden" name="created_by" id="created_by" value="{{ auth()->user()->id ?? '' }}">
+
+            <div class="mb-3">
+                <label for="hostel_fee" class="form-label">Hostel Fee*</label>
+                <input type="number" class="form-control" id="hostel_fee" name="hostel_fee" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="caution_money" class="form-label">Caution Money*</label>
+                <input type="number" class="form-control" id="caution_money" name="caution_money" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="months" class="form-label">Months</label>
+                <input type="number" class="form-control" id="months" name="months" min="0">
+            </div>
+
+            <div class="mb-3">
+                <label for="days" class="form-label">Days</label>
+                <input type="number" class="form-control" id="days" name="days" min="0" max="31">
+            </div>
+
+            <div class="mb-3">
+                <label for="facility" class="form-label">Facility</label>
+                <input type="text" class="form-control" id="facility" name="facility">
+            </div>
+
+            <div class="mb-3">
+                <label for="remarks" class="form-label">Remarks</label>
+                <textarea class="form-control" id="remarks" name="remarks"></textarea>
+            </div>
+
+            <div class="mb-3">
+                <label for="approved_by" class="form-label">Approved By</label>
+                <input type="text" class="form-control" id="approved_by" name="approved_by">
+            </div>
+
+            <div class="mb-3">
+                <label for="document" class="form-label">Upload Document</label>
+                <input type="file" class="form-control" id="document" name="document" accept=".pdf,.jpg,.jpeg,.png">
+            </div>
+
+            <div class="mb-3 text-danger" id="editAmountErrors"></div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-success">Save Changes</button>
+                <button type="button" class="btn btn-secondary" onclick="hideEditAmountSection()">Cancel</button>
+            </div>
+        </form>
+    </div> old -->
+
+
+
+    <!-- Bootstrap Modal -->
+    <div class="modal fade" id="editAmountModal" tabindex="-1" aria-labelledby="editAmountModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editAmountModalLabel">Edit Payment Amount</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editAmountForm" enctype="multipart/form-data">
+                        <input type="hidden" name="guest_id" id="edit_guest_id">
+                        <input type="hidden" name="created_by" id="created_by" value="{{ auth()->user()->id ?? '' }}">
+
+                        <div class="mb-3">
+                            <label for="hostel_fee" class="form-label">Hostel Fee*</label>
+                            <input type="number" class="form-control" id="hostel_fee" name="hostel_fee" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="caution_money" class="form-label">Caution Money*</label>
+                            <input type="number" class="form-control" id="caution_money" name="caution_money" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="months" class="form-label">Months</label>
+                            <input type="number" class="form-control" id="months" name="months" min="0">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="days" class="form-label">Days</label>
+                            <input type="number" class="form-control" id="days" name="days" min="0" max="31">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="facility" class="form-label">Facility</label>
+                            <input type="text" class="form-control" id="facility" name="facility">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="remarks" class="form-label">Remarks</label>
+                            <textarea class="form-control" id="remarks" name="remarks"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="approved_by" class="form-label">Approved By</label>
+                            <input type="text" class="form-control" id="approved_by" name="approved_by">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="document" class="form-label">Upload Document</label>
+                            <input type="file" class="form-control" id="document" name="document" accept=".pdf,.jpg,.jpeg,.png">
+                        </div>
+
+                        <div class="mb-3 text-danger" id="editAmountErrors"></div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success">Save Changes</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 {{-- Accessory Details Modal --}}
@@ -50,51 +184,80 @@
     </div>
 </div>
 
-{{-- Adjust Payment Modal --}}
-<div class="modal fade" id="adjustPaymentModal" tabindex="-1" aria-labelledby="adjustPaymentModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="adjustPaymentModalLabel">Adjust Guest Payment</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="adjustPaymentForm">
-                    <input type="hidden" id="adjustGuestId" name="guest_id">
-                    <div class="mb-3">
-                        <label for="currentPayableAmountDisplay" class="form-label">Current Payable Amount (from DB)</label>
-                        <input type="text" class="form-control" id="currentPayableAmountDisplay" readonly>
-                    </div>
-                    <div class="mb-3">
-                        <label for="calculatedTotalAmountDisplay" class="form-label">Calculated Total Amount (System)</label>
-                        <input type="text" class="form-control" id="calculatedTotalAmountDisplay" readonly>
-                        <small class="form-text text-muted">This is the full amount calculated by the system without waiver.</small>
-                    </div>
-                    <div class="mb-3">
-                        <label for="newPayableAmount" class="form-label">New Custom Payable Amount <span class="text-danger">*</span></label>
-                        <input type="number" class="form-control" id="newPayableAmount" name="new_payable_amount" required min="0" step="0.01">
-                    </div>
-                    <div class="mb-3">
-                        <label for="waiverRemarks" class="form-label">Fee Waiver Remarks (Optional)</label>
-                        <textarea class="form-control" id="waiverRemarks" name="waiver_remarks" rows="3"></textarea>
-                    </div>
-                    <div id="adjustPaymentMessage" class="mt-3"></div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="saveAdjustedPaymentBtn">Save Changes</button>
-            </div>
-        </div>
-    </div>
-</div>
+
 
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
+
+
+            //Approve Guest Function
+        window.approveGuest = function(guestId) {
+            fetch("{{ url('/api/admin/approved-guest') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": getCsrfToken(),
+                        "Accept": "application/json"
+                    },
+                    body: JSON.stringify({
+                        guest_id: guestId
+                    })
+                })
+                .then(response => response.json())
+                .then(response => {
+                    if (response.success) {
+                        showCustomMessageBox(response.message || "Guest approved successfully.", 'success');
+                        fetchPendingGuests();
+                    } else {
+                        showCustomMessageBox(response.message || "Approval failed.", 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error("Error approving guest:", error);
+                    showCustomMessageBox("An error occurred during approval.", 'danger');
+                });
+        }
+
+
+
+
+        // Reject guest function
+        window.denyGuest = function(guestId) {
+            fetch("{{ url('/api/payment/reject') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": getCsrfToken(),
+                        "Accept": "application/json"
+                    },
+                    body: JSON.stringify({
+                        guest_id: guestId
+                    })
+                })
+                .then(response => response.json())
+                .then(response => {
+                    if (response.success) {
+                        showCustomMessageBox(response.message || "Guest rejected successfully.", 'success');
+                        fetchPendingGuests();
+                    } else {
+                        showCustomMessageBox(response.message || "Rejection failed.", 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error("Error denying guest:", error);
+                    showCustomMessageBox("An error occurred during rejection.", 'danger');
+                });
+        }
+
+
+
+
+
+
+
+
     // Function to show a custom message box
     function showCustomMessageBox(message, type = 'info', targetElementId = 'mainResponseMessage') {
         const messageContainer = document.getElementById(targetElementId);
@@ -127,7 +290,7 @@
         }
     }
 
-    document.addEventListener("DOMContentLoaded", function () {
+    document.addEventListener("DOMContentLoaded", function() {
         fetchPendingGuests();
 
         function getCsrfToken() {
@@ -161,7 +324,7 @@
                         // Display the guest's current payable amount. Default to 'N/A' or 'Not Set' if null.
                         const currentPayableDisplay = guest.payable_amount !== null && guest.payable_amount !== undefined ? guest.payable_amount : 'Not Set';
                         const remarksContent = guest.remarks || 'N/A';
-                        
+
                         let attachmentLink = 'N/A';
                         if (guest.attachment_path) {
                             // Assuming 'attachment_path' is relative to the public storage disk
@@ -169,20 +332,31 @@
                         }
 
                         let actionButtons = '';
-                        if(guest.status === 'pending'){
+
+                        if (guest.status === 'pending') {
+                            // Show approve/deny buttons for pending guests
                             actionButtons = `
-                                <button class="btn btn-success btn-sm mb-1" onclick="approveGuest(${guest.id})">Approve</button>
-                                <button class="btn btn-danger btn-sm mb-1" onclick="denyGuest(${guest.id})">Deny</button>
-                            `;
-                            // Show "Update Payment" button only if fee_waiver is true
+    <button class="btn btn-success btn-sm mb-1" onclick="approveGuest(${guest.id})">Approve</button>
+    <button class="btn btn-danger btn-sm mb-1" onclick="denyGuest(${guest.id})">Deny</button>
+  `;
+
                             if (guest.fee_waiver) {
-                                actionButtons += `
-                                    <button class="btn btn-warning btn-sm" onclick="showAdjustPaymentModal(${guest.id}, '${currentPayableDisplay}', '${remarksContent}')">Update Payment</button>
-                                `;
+                                if (!guest.fee_waiver_approved) {
+                                    actionButtons += `
+        <button class="btn btn-primary btn-sm mb-1" onclick="approveFeeWaiver(${guest.id})">Approve Fee Waiver</button>
+      `;
+                                }
                             }
+                        } else if (guest.status === 'waiver_approved') {
+                            // Show Edit Amount button only if status is waiver_approved
+                            actionButtons = `
+    <button class="btn btn-warning btn-sm mb-1" onclick="showAdjustPaymentModal(${guest.id}, '${currentPayableDisplay}', '${remarksContent}')">Edit Amount</button>
+  `;
                         } else {
-                            actionButtons = `<span class="text-muted">${guest.status.charAt(0).toUpperCase() + guest.status.slice(1)}</span>`; //show status
+                            // For any other status, just show the status text
+                            actionButtons = `<span class="text-muted">${guest.status.charAt(0).toUpperCase() + guest.status.slice(1)}</span>`;
                         }
+
 
                         guestList.innerHTML += `
                             <tr id="guest-${guest.id}">
@@ -252,42 +426,6 @@
             accessoryModal.show();
         }
 
-        // NEW: Function to show the Adjust Payment Modal
-        window.showAdjustPaymentModal = function(guestId, currentPayable, existingRemarks) {
-            document.getElementById('adjustGuestId').value = guestId;
-            document.getElementById('currentPayableAmountDisplay').value = currentPayable;
-            document.getElementById('newPayableAmount').value = ''; // Clear previous input
-            document.getElementById('waiverRemarks').value = existingRemarks || ''; // Pre-fill existing remarks
-            document.getElementById('adjustPaymentMessage').innerHTML = ''; // Clear previous messages
-
-            // Make an API call to get the calculated total, and pre-fill the newPayableAmount field
-            // Use the correct URL for your API
-            fetch(`http://127.0.0.1:8000/api/guest/${guestId}/total-amount`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Display the calculated total in a read-only field
-                        document.getElementById('calculatedTotalAmountDisplay').value = data.data.final_total_amount;
-                        // Pre-fill the new payable amount with the calculated final total as a starting point
-                        document.getElementById('newPayableAmount').value = data.data.final_total_amount;
-                    } else {
-                        showModalMessage(data.message || "Could not fetch calculated total.", 'warning', 'adjustPaymentMessage');
-                        document.getElementById('calculatedTotalAmountDisplay').value = 'Error';
-                        document.getElementById('newPayableAmount').value = 0; // Default to 0 on error
-                    }
-                })
-                .catch(error => {
-                    console.error("Error fetching calculated total:", error);
-                    showModalMessage("Error fetching calculated total. Please check console.", 'danger', 'adjustPaymentMessage');
-                    document.getElementById('calculatedTotalAmountDisplay').value = 'Error';
-                    document.getElementById('newPayableAmount').value = 0; // Default to 0 on error
-                })
-                .finally(() => {
-                    // Always show the modal after attempting to fetch and pre-fill
-                    const adjustPaymentModal = new bootstrap.Modal(document.getElementById('adjustPaymentModal'));
-                    adjustPaymentModal.show();
-                });
-        }
 
         // NEW: Event listener for the Save Changes button in Adjust Payment Modal
         document.getElementById('saveAdjustedPaymentBtn').addEventListener('click', function() {
@@ -300,7 +438,65 @@
                 return;
             }
 
+
+
+
             fetch("{{ url('/api/admin/guests/adjust-payment') }}", { // Existing API endpoint for saving adjustment
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": getCsrfToken(),
+                        "Accept": "application/json"
+                    },
+                    body: JSON.stringify({
+                        guest_id: guestId,
+                        new_payable_amount: newPayableAmount,
+                        waiver_remarks: waiverRemarks
+                    })
+                })
+                .then(response => response.json())
+                .then(response => {
+                    if (response.success) {
+                        showModalMessage(response.message || "Payment adjusted successfully.", 'success', 'adjustPaymentMessage');
+                        // Close the modal after a short delay and refresh the list
+                        setTimeout(() => {
+                            const modalElement = document.getElementById('adjustPaymentModal');
+                            const modal = bootstrap.Modal.getInstance(modalElement);
+                            if (modal) modal.hide();
+                            fetchPendingGuests(); // Re-fetch to update the list with new amount
+                        }, 1000);
+                    } else {
+                        showModalMessage(response.message || "Payment adjustment failed.", 'danger', 'adjustPaymentMessage');
+                    }
+                })
+                .catch(error => {
+                    console.error("Error adjusting payment:", error);
+                    showModalMessage("An error occurred during payment adjustment.", 'danger', 'adjustPaymentMessage');
+                });
+        });
+
+
+
+
+
+
+        document.getElementById('accessoryModal').addEventListener('hidden.bs.modal', function(event) {
+            // Any cleanup needed when modal is hidden
+        });
+    });
+
+
+
+
+
+    // Approve fee waiver function
+
+    function getCsrfToken() {
+        return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    }
+
+    window.approveFeeWaiver = function(guestId) {
+        fetch("{{ url('/api/admin/approved-waiver') }}", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -308,86 +504,128 @@
                     "Accept": "application/json"
                 },
                 body: JSON.stringify({
-                    guest_id: guestId,
-                    new_payable_amount: newPayableAmount,
-                    waiver_remarks: waiverRemarks
+                    guest_id: guestId
                 })
             })
             .then(response => response.json())
             .then(response => {
                 if (response.success) {
-                    showModalMessage(response.message || "Payment adjusted successfully.", 'success', 'adjustPaymentMessage');
-                    // Close the modal after a short delay and refresh the list
-                    setTimeout(() => {
-                        const modalElement = document.getElementById('adjustPaymentModal');
-                        const modal = bootstrap.Modal.getInstance(modalElement);
-                        if (modal) modal.hide();
-                        fetchPendingGuests(); // Re-fetch to update the list with new amount
-                    }, 1000);
+                    showCustomMessageBox(response.message || "Fee waiver approved successfully.", 'success');
+                    fetchPendingGuests(); // Refresh the list to update button/status
                 } else {
-                    showModalMessage(response.message || "Payment adjustment failed.", 'danger', 'adjustPaymentMessage');
+                    showCustomMessageBox(response.message || "Fee waiver approval failed.", 'danger');
                 }
             })
             .catch(error => {
-                console.error("Error adjusting payment:", error);
-                showModalMessage("An error occurred during payment adjustment.", 'danger', 'adjustPaymentMessage');
+                console.error("Error approving fee waiver:", error);
+                showCustomMessageBox("An error occurred during fee waiver approval.", 'danger');
             });
+    };
+
+
+
+
+
+
+    //show form
+
+    // Initialize Bootstrap modal variable globally
+    let editAmountModal;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize the modal using Bootstrap JS (make sure Bootstrap JS is included in your page)
+        const modalEl = document.getElementById('editAmountModal');
+        editAmountModal = new bootstrap.Modal(modalEl, {
+            backdrop: 'static',
+            keyboard: false
         });
 
+        // Submit handler here remains the same...
+    });
 
-        window.approveGuest = function(guestId) {
-            fetch("{{ url('/api/admin/approved-guest') }}", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": getCsrfToken(),
-                    "Accept": "application/json"
-                },
-                body: JSON.stringify({ guest_id: guestId })
-            })
-            .then(response => response.json())
-            .then(response => {
-                if (response.success) {
-                    showCustomMessageBox(response.message || "Guest approved successfully.", 'success');
-                    fetchPendingGuests();
+    function showAdjustPaymentModal(guestId, remarks = '') {
+        const guestIdInput = document.getElementById('edit_guest_id');
+        const hostelFeeInput = document.getElementById('hostel_fee');
+        const cautionMoneyInput = document.getElementById('caution_money');
+        const facilityInput = document.getElementById('facility');
+        const remarksInput = document.getElementById('remarks');
+        const monthsInput = document.getElementById('months');
+        const daysInput = document.getElementById('days');
+        const errorBox = document.getElementById('editAmountErrors');
+
+        guestIdInput.value = guestId;
+        remarksInput.value = remarks || '';
+
+        hostelFeeInput.value = '';
+        cautionMoneyInput.value = '';
+        facilityInput.value = '';
+        monthsInput.value = '';
+        daysInput.value = '';
+        errorBox.textContent = '';
+
+        fetch(`/api/guest/${guestId}/total-amount`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.data) {
+                    hostelFeeInput.value = data.data.hostel_fee || 0;
+                    cautionMoneyInput.value = data.data.caution_money || 0;
+                    facilityInput.value = data.data.facility || '';
+                    monthsInput.value = data.data.months || '';
+                    daysInput.value = data.data.days || '';
                 } else {
-                    showCustomMessageBox(response.message || "Approval failed.", 'danger');
+                    alert('Failed to load payment details');
                 }
             })
-            .catch(error => {
-                console.error("Error approving guest:", error);
-                showCustomMessageBox("An error occurred during approval.", 'danger');
-            });
-        }
+            .catch(() => alert('Error fetching payment details'));
 
-        window.denyGuest = function(guestId) {
-            fetch("{{ url('/api/payment/reject') }}", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": getCsrfToken(),
-                    "Accept": "application/json"
-                },
-                body: JSON.stringify({ guest_id: guestId })
-            })
-            .then(response => response.json())
-            .then(response => {
-                if (response.success) {
-                    showCustomMessageBox(response.message || "Guest rejected successfully.", 'success');
-                    fetchPendingGuests();
-                } else {
-                    showCustomMessageBox(response.message || "Rejection failed.", 'danger');
+        // Show modal instead of display block
+        editAmountModal.show();
+    }
+
+    function hideEditAmountSection() {
+        editAmountModal.hide();
+    }
+
+
+
+
+    //payments edit submit 
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('editAmountForm');
+        if (form) {
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const formData = new FormData(form);
+
+                try {
+                    const response = await fetch('/api/admin/modify-waiver/payments', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        alert('Payment updated successfully');
+                        location.reload();
+                    } else {
+                        document.getElementById('editAmountErrors').innerText = result.message || 'Something went wrong.';
+                    }
+
+                } catch (error) {
+                    console.error('Error:', error);
+                    document.getElementById('editAmountErrors').innerText = 'Something went wrong. Try again.';
                 }
-            })
-            .catch(error => {
-                console.error("Error denying guest:", error);
-                showCustomMessageBox("An error occurred during rejection.", 'danger');
             });
         }
-
-        document.getElementById('accessoryModal').addEventListener('hidden.bs.modal', function (event) {
-            // Any cleanup needed when modal is hidden
-        });
     });
 </script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+
 @endsection

@@ -50,7 +50,7 @@ function fetchGuestStatus() {
 
             data.data.forEach(guest => {
                 let statusClass = getStatusClass(guest.status);
-                let actionColumn = (guest.status.trim().toLowerCase() === 'approved')
+                let actionColumn = (guest.status.trim().toLowerCase() === 'approved' || guest.status.trim().toLowerCase() === 'waiver_approved')
                     ? `<button class="btn btn-primary btn-sm" onclick="makePayment(${guest.id})"><i class="fa fa-credit-card"></i> Make Payment</button>`
                     : '-';
 
