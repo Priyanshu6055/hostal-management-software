@@ -19,8 +19,9 @@ class CreateFeeExceptionsTable extends Migration
             $table->string('approved_by')->nullable();                  
             $table->text('remarks')->nullable();                    
             $table->string('document_path')->nullable();
-            $table->unsignedBigInteger('created_by')->nullable();            
+            $table->unsignedBigInteger('created_by')->nullable();  
             $table->timestamps();
+            $table->text('account_remark')->nullable();
 
         });
     }

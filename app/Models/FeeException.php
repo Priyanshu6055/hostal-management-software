@@ -16,6 +16,7 @@ class FeeException extends Model
         'remarks',
         'document_path',
         'created_by',
+        'account_remark',
     ];
 
     public function guest()

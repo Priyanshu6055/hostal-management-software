@@ -365,7 +365,33 @@ class GuestController extends Controller
             // Only fetch guests whose status is NOT 'paid' or 'rejected'
             $guests = Guest::with([
                 'accessories.accessoryHead:id,name'
-            ])->whereNotIn('status', ['paid', 'approved', 'rejected'])->get();
+            ])->whereNotIn('status', ['paid', 'approved', 'rejected', 'waiver_approved'])
+            ->with('feeException')->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pending guests with accessories fetched successfully',
+                'data' => $guests,
+                'errors' => null
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch pending guests',
+                'data' => null,
+                'errors' => ['exception' => $e->getMessage()]
+            ], 500);
+        }
+    }
+
+
+    public function pendingGuestsForAccountant()
+    {
+        try {
+            // Only fetch guests whose status is NOT 'paid' or 'rejected'
+            $guests = Guest::with([
+                'accessories.accessoryHead:id,name'
+            ])->whereNotIn('status', ['paid', 'approved', 'rejected', 'pending', 'accountant_reject'])->get();
 
             return response()->json([
                 'success' => true,
@@ -418,7 +444,7 @@ class GuestController extends Controller
     public function getApprovedOrRejectedGuests()
     {
         try {
-            $guests = Guest::whereIn('status', ['approved', 'rejected', 'pending','waiver_approved'])->get();
+            $guests = Guest::whereIn('status', ['approved', 'rejected', 'pending', 'waiver_approved'])->get();
 
             return response()->json([
                 'success' => true,
@@ -445,4 +471,43 @@ class GuestController extends Controller
 
         return view('admin.Pending_guest', compact('guests'));
     }
+
+    // In your GuestController or a relevant controller
+    public function getTotalAmount(Guest $guest) // Assuming route model binding
+    {
+        try {
+            // You'll need to fetch the relevant fee/payment details.
+            // This might come from the Guest model directly, or a related model like FeeException or a Payments model.
+            // Let's assume for this example, some fields are on the Guest model and some on FeeException.
+            // Ensure FeeException is eagerly loaded if you need its data.
+            $guest->load('feeException'); // Load feeException if it's related
+
+            $data = [
+                'hostel_fee' => $guest->hostel_fee ?? 0, // Assuming hostel_fee is on Guest or fetched
+                'caution_money' => $guest->caution_money ?? 0, // Assuming caution_money is on Guest or fetched
+                'months' => $guest->feeException->months ?? null, // Example: Months from FeeException
+                'days' => $guest->feeException->days ?? null,     // Example: Days from FeeException
+                'facility' => $guest->feeException->facility ?? null, // Example: Facility from FeeException
+                'remarks' => $guest->remarks ?? null, // Guest's general remarks
+                'approved_by' => $guest->feeException->approved_by ?? null, // Example: Approved by from FeeException
+                'document_path' => $guest->feeException->document_path ?? null, // Example: Document path from FeeException
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment details fetched successfully.',
+                'data' => $data
+            ]);
+        } catch (\Exception $e) {
+            \Log::error("Error fetching total amount for guest {$guest->id}: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch payment details.',
+                'errors' => ['server_error' => $e->getMessage()]
+            ], 500);
+        }
+    }
+
+
+    
 }

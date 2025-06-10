@@ -45,4 +45,6 @@ class Guest extends Model
     {
         return $this->hasOne(FeeException::class);
     }
+
+    
 }

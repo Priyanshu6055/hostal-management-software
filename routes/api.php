@@ -62,31 +62,6 @@ Route::middleware(['auth:sanctum'])->get('/admin-dashboard', function () {
 
 
 
-// Route::post('/login', function (Request $request) {
-//     $request->validate([
-//         'email' => 'required|email',
-//         'password' => 'required',
-//     ]);
-
-//     $user = User::where('email', $request->email)->first();
-
-//     if (! $user || ! Hash::check($request->password, $user->password)) {
-//         return response()->json(['message' => 'Invalid credentials'], 401);
-//     }
-
-//     $tokenResult = $user->createToken('api-token');
-//     $token = $tokenResult->plainTextToken;
-
-//     // Manually update expires_at
-//     $tokenResult->accessToken->expires_at = Carbon::now()->addMinutes(1);
-//     $tokenResult->accessToken->save();
-
-//     return response()->json([
-//         'token' => $token,
-//         'user' => $user,
-//         'expires_at' => Carbon::now()->addMinutes(10),
-//     ]);
-// });
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -188,11 +163,6 @@ Route::put('/notices/{id}', [NoticeController::class, 'update']); // Update Noti
 Route::delete('/notices/{id}', [NoticeController::class, 'destroy']); // Delete Notice
 
 
-// Route::post('/room-change/request/{resident_id}', [RoomChangeController::class, 'requestRoomChange']);
-// Route::get('/room-change/requests', [RoomChangeController::class, 'getAllRequests']);
-// Route::put('/room-change/respond/{request_id}', [RoomChangeController::class, 'respondToRequest']);
-// Route::put('/room-change/confirm/{request_id}', [RoomChangeController::class, 'confirmRoomChange']);
-// Route::get('/room-change-requests/resident/{residentId}', [RoomChangeController::class, 'getRequestsByResident']);
 
 // Resident requests room change
 Route::post('/room-change/request/{resident_id}', [RoomChangeController::class, 'requestRoomChange']);
@@ -232,14 +202,6 @@ Route::get('/room-change/requests', [RoomChangeController::class, 'getAllRoomCha
 
 
 
-// Route::post('/grievances', [GrievanceController::class, 'submitGrievance']); // Resident submits grievance
-// Route::get('/grievances', [GrievanceController::class, 'getAllGrievances']); // Admin views all grievances
-// Route::get('/grievances/{id}', [GrievanceController::class, 'getGrievanceById']); // View single grievance
-// Route::put('/grievances/{id}', [GrievanceController::class, 'respondToGrievance']); // Admin responds & closes grievance
-// Route::get('/grievances/resident/{resident_id}', [GrievanceController::class, 'getResidentGrievances']); // Resident views grievances
-// Route::delete('/grievances/{id}', [GrievanceController::class, 'deleteGrievance']); // Admin deletes grievance
-
-
 
 Route::prefix('grievances')->group(function () {
     // Submit a grievance
@@ -277,6 +239,7 @@ Route::get('/resident-checkout-logs/{residentId}', [CheckoutController::class, '
 // Guest Routes 
 Route::post('/guests', [GuestController::class, 'register']); // Guest registers
 Route::get('/guests/pending', [GuestController::class, 'pendingGuests']);
+Route::get('/accountant/guests/pending', [GuestController::class, 'pendingGuestsForAccountant']);
 Route::get('/admin/check-rooms', [AdminController::class, 'checkAvailableRooms']); // Check available rooms
 Route::post('/admin/approved-guest', [AdminController::class, 'adminApproved']); // Send payment request
 Route::post('/admin/approved-waiver', [FeeExceptionController::class, 'adminWaiverApproved']); // Send payment request
@@ -377,8 +340,6 @@ Route::get('/guests/paid', [GuestController::class, 'getPaidGuests']);
 
 
 
-
-
 //In app notifications
 
 Route::post('/send-notification', function (Request $request) {
@@ -392,7 +353,6 @@ Route::post('/send-notification', function (Request $request) {
 
     return response()->json(['success' => true, 'message' => 'Notification sent.']);
 });
-
 
 
 
@@ -461,3 +421,16 @@ Route::post('/send-mail', function (Request $request) {
         'data' => $response
     ]);
 });
+
+
+
+Route::post('/accountant/update-guest-status', [FeeExceptionController::class, 'updateGuestStatusWithRemark']);
+
+
+Route::get('/guest/{guest}/total-amount', [GuestController::class, 'getTotalAmount'])->middleware('auth:sanctum');
+
+
+
+Route::get('/guest/{guest}/fee-exception', [FeeExceptionController::class, 'showFeeException']);
+
+Route::get('/guest/{guest}/fee-exception-details', [FeeExceptionController::class, 'getFeeExceptionDetailsForEdit']);

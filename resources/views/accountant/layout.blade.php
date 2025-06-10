@@ -60,16 +60,16 @@
 
         <form method="POST" action="{{ route('logout') }}" class="d-inline">
             @csrf
-            <button type="submit" class="btn btn-danger">Logout</button>
+            <button type="submit" class="btn btn-danger" style="width: 95%; margin:7px; border-radius: 17px; font-size:1.1em;">Logout</button>
         </form>
-       <a href="{{ route('accountant.dashboard') }}" class="{{ request()->routeIs('accountant.dashboard') ? 'active' : '' }}">
+        <a href="{{ route('accountant.dashboard') }}" class="{{ request()->routeIs('accountant.dashboard') ? 'active' : '' }}">
             <i class="bi bi-speedometer2"></i> Dashboard
         </a>
-    
+
         <a href="{{ route('accountant.fees') }}" class="nav-link text-white">
             <i class="bi bi-currency-dollar"></i> Manage Fees {{-- Changed icon to Bootstrap Icon --}}
         </a>
-    
+
 
         <a href="{{ route('accountant.account') }}" class="{{ request()->routeIs('accountant.account') ? 'active' : '' }}">
             <i class="bi bi-box-arrow-in-left"></i> Checkout Requests
@@ -79,9 +79,11 @@
         </a>
 
         <a href="{{ route('accountant.feemaster') }}" class="{{ request()->is('accountant/feemaster') ? 'active' : '' }}">
-    <i class="bi bi-wallet-fill"></i> Fee Master
-</a>
-    
+            <i class="bi bi-wallet-fill"></i> Fee Master
+        </a>
+        <a href="{{ route('accountant.guests') }}" class="{{ request()->routeIs('accountant.guests') ? 'active' : '' }}">
+            <i class="bi bi-person-fill"></i> Guest Management
+        </a>
 
     </div>
 

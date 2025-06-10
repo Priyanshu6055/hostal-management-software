@@ -259,3 +259,5 @@ Route::get('/resident/fine', function () {
 });
 
 
+// In routes/web.php
+Route::get('/accountant/guests', [App\Http\Controllers\FeeExceptionController::class, 'showGuestManagement'])->name('accountant.guests');
