@@ -15,7 +15,7 @@
                 <th>Fee Waiver</th>
                 {{-- <th>Current Payable</th> --}} {{-- Removed Current Payable --}}
                 <th>Remarks</th>
-                <th>Attachment</th>
+                <th>Guest Attachment</th>
                 <th>Accessories</th>
                 <th>Action</th>
             </tr>

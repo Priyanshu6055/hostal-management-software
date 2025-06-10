@@ -22,8 +22,8 @@
                 <th>Fee Waiver</th>
                 <th>Account Remark</th> {{-- NEW COLUMN --}}
                 <th>Status</th> {{-- NEW COLUMN --}}
-                <th>Remarks</th>
-                <th>Attachment</th>
+                <th>Guest Remarks</th>
+                <th>Guest Attachment</th>
                 <th>Accessories</th>
                 <th>Action</th>
             </tr>
@@ -997,8 +997,8 @@
                     let actionButtons = '';
                     if (guest.status === 'pending') {
                         actionButtons = `
-                            <button class="btn btn-success btn-sm mb-1" onclick="approveGuest(${guest.id})">Approve</button>
-                            <button class="btn btn-danger btn-sm mb-1" onclick="denyGuest(${guest.id})">Deny</button>
+                            <button class="btn btn-success btn-sm mb-1" onclick="approveGuest(${guest.id})">Process</button>
+                            <button class="btn btn-danger btn-sm mb-1" onclick="denyGuest(${guest.id})">Reject</button>
                         `;
                         if (guest.fee_waiver && !guest.fee_waiver_approved) {
                             actionButtons += `

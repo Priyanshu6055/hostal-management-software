@@ -46,9 +46,9 @@ class AccessoryController extends Controller
                 $fromDate = Carbon::parse($existing->from_date);
                 $diffInDays = $fromDate->diffInDays($today, false);
 
-                if ($diffInDays < 30) {
+                if ($diffInDays < 0) {
                     return $this->apiResponse(false, 'Cannot update accessory. Please wait at least 30 days from the last update.', null, 403, [
-                        'days_remaining' => 30 - $diffInDays
+                        'days_remaining' => 0 - $diffInDays
                     ]);
                 }
 
