@@ -18,6 +18,115 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 class GuestController extends Controller
 {
 
+    // public function register(Request $request)
+    // {
+    //     try {
+    //         $validatedData = $request->validate([
+    //             'name' => 'required|string|max:255',
+    //             'email' => 'required|email|unique:guests,email',
+    //             'gender' => 'required|in:Male,Female,Other',
+    //             'scholar_no' => 'required|unique:guests,scholar_no',
+    //             'fathers_name' => 'required|string|max:255',
+    //             'mothers_name' => 'required|string|max:255',
+    //             'local_guardian_name' => 'nullable|string|max:255',
+    //             'emergency_no' => 'required|string|max:20',
+    //             'room_preference' => 'required|string|max:255', // Consider Rule::in(['Single', 'Double', 'Triple']) for better validation
+    //             'food_preference' => 'required|string|max:255', // Consider Rule::in(['Veg', 'Non-Veg']) for better validation
+    //             'months' => 'nullable|integer|min:1|max:12',
+    //             'accessory_head_ids' => 'nullable|array',
+    //             'accessory_head_ids.*' => 'exists:accessory_heads,id',
+    //             // New fields:
+    //             'fee_waiver' => 'boolean', // It will be true/false (0/1 from checkbox)
+    //             'remarks' => [
+    //                 'nullable',
+    //                 'string',
+    //                 'max:1000',
+    //                 'required_if:fee_waiver,true', // Required only if fee_waiver is true
+    //             ],
+    //             'attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120', // <--- NEW: Optional file attachment (Max 5MB)
+    //         ]);
+
+    //         // Start a database transaction
+    //         DB::beginTransaction();
+
+    //         $months = $validatedData['months'] ?? 3;
+
+    //         $attachmentPath = null;
+    //         // Handle attachment upload if a file is present
+    //         if ($request->hasFile('attachment')) {
+    //             // Store the file in the 'attachments' directory within the 'public' disk.
+    //             // This will typically save to `storage/app/public/attachments/`
+    //             // and be publicly accessible via `your-app-url/storage/attachments/filename.ext`
+    //             $attachmentPath = $request->file('attachment')->store('attachments', 'public');
+    //         }
+
+    //         // Prepare guest data for creation
+    //         $guestData = collect($validatedData)->except(['accessory_head_ids', 'attachment'])->toArray();
+    //         $guestData['months'] = $months;
+    //         $guestData['attachment_path'] = $attachmentPath; // Add the attachment path
+
+    //         // Ensure fee_waiver is a proper boolean, as FormData might send 'true'/'false' strings
+    //         $guestData['fee_waiver'] = filter_var($validatedData['fee_waiver'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+    //         // Create the Guest record
+    //         $guest = Guest::create($guestData);
+
+    //         // Handle accessories if provided
+    //         if (!empty($validatedData['accessory_head_ids'])) {
+    //             $fromDate = Carbon::now();
+    //             $toDate = Carbon::now()->addMonths($months);
+
+    //             foreach ($validatedData['accessory_head_ids'] as $headId) {
+    //                 $accessory = Accessory::where('accessory_head_id', $headId)
+    //                     ->where('is_active', true)
+    //                     ->latest('from_date')
+    //                     ->first();
+
+    //                 if ($accessory) {
+    //                     GuestAccessory::create([
+    //                         'guest_id' => $guest->id,
+    //                         'accessory_head_id' => $headId,
+    //                         'price' => $accessory->price,
+    //                         'total_amount' => $accessory->price * $months,
+    //                         'from_date' => $fromDate,
+    //                         'to_date' => $toDate
+    //                     ]);
+    //                 }
+    //             }
+    //         }
+
+    //         // Commit the transaction if everything was successful
+    //         DB::commit();
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Guest registered successfully.',
+    //             'data' => $guest,
+    //             'errors' => null
+    //         ], 201);
+    //     } catch (ValidationException $e) {
+    //         // Rollback the transaction on validation failure
+    //         DB::rollBack();
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Validation failed',
+    //             'data' => null,
+    //             'errors' => $e->errors()
+    //         ], 422);
+    //     } catch (\Exception $e) { // Catching a general Exception for broader error handling
+    //         // Rollback the transaction on any other unexpected error
+    //         DB::rollBack();
+    //         Log::error('Guest registration failed: ' . $e->getMessage(), ['exception' => $e]); // Log the full exception
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Something went wrong during guest registration.',
+    //             'data' => null,
+    //             'errors' => ['exception' => $e->getMessage()]
+    //         ], 500);
+    //     }
+    // } old without number etc
+
     public function register(Request $request)
     {
         try {
@@ -30,12 +139,14 @@ class GuestController extends Controller
                 'mothers_name' => 'required|string|max:255',
                 'local_guardian_name' => 'nullable|string|max:255',
                 'emergency_no' => 'required|string|max:20',
-                'room_preference' => 'required|string|max:255', // Consider Rule::in(['Single', 'Double', 'Triple']) for better validation
-                'food_preference' => 'required|string|max:255', // Consider Rule::in(['Veg', 'Non-Veg']) for better validation
+                'number' => 'nullable|string|max:20', 
+                'parent_no' => 'nullable|string|max:20', 
+                'guardian_no' => 'nullable|string|max:20', 
+                'room_preference' => 'required|string|max:255', 
+                'food_preference' => 'required|string|max:255', 
                 'months' => 'nullable|integer|min:1|max:12',
                 'accessory_head_ids' => 'nullable|array',
                 'accessory_head_ids.*' => 'exists:accessory_heads,id',
-                // New fields:
                 'fee_waiver' => 'boolean', // It will be true/false (0/1 from checkbox)
                 'remarks' => [
                     'nullable',
@@ -43,7 +154,7 @@ class GuestController extends Controller
                     'max:1000',
                     'required_if:fee_waiver,true', // Required only if fee_waiver is true
                 ],
-                'attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120', // <--- NEW: Optional file attachment (Max 5MB)
+                'attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120', // Optional file attachment (Max 5MB)
             ]);
 
             // Start a database transaction
@@ -54,9 +165,6 @@ class GuestController extends Controller
             $attachmentPath = null;
             // Handle attachment upload if a file is present
             if ($request->hasFile('attachment')) {
-                // Store the file in the 'attachments' directory within the 'public' disk.
-                // This will typically save to `storage/app/public/attachments/`
-                // and be publicly accessible via `your-app-url/storage/attachments/filename.ext`
                 $attachmentPath = $request->file('attachment')->store('attachments', 'public');
             }
 
@@ -126,6 +234,7 @@ class GuestController extends Controller
             ], 500);
         }
     }
+
 
 
     // public function getGuestTotalAmount(Request $request, $guest_id)
@@ -366,7 +475,7 @@ class GuestController extends Controller
             $guests = Guest::with([
                 'accessories.accessoryHead:id,name'
             ])->whereNotIn('status', ['paid', 'approved', 'rejected', 'waiver_approved'])
-            ->with('feeException')->get();
+                ->with('feeException')->get();
 
             return response()->json([
                 'success' => true,
@@ -507,7 +616,4 @@ class GuestController extends Controller
             ], 500);
         }
     }
-
-
-    
 }

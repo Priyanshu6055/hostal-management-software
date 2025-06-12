@@ -131,14 +131,29 @@
                     <div id="mothersNameError" class="invalid-feedback text-red-500 text-xs mt-1"></div>
                 </div>
                 <div class="md:col-span-2">
-                    <label for="local_guardian_name" class="block text-gray-700 text-sm font-medium mb-1">Local Guardian Name</label>
+                    <label for="local_guardian_name" class="block text-gray-700 text-sm font-medium mb-1">Local Guardian Name (Optional)</label>
                     <input type="text" name="local_guardian_name" id="local_guardian_name" class="form-control w-full p-2 border border-gray-300 rounded-md focus:ring focus:ring-blue-200 focus:border-blue-500">
                     <div id="localGuardianNameError" class="invalid-feedback text-red-500 text-xs mt-1"></div>
                 </div>
-                <div class="md:col-span-2">
+                <div>
                     <label for="emergency_no" class="block text-gray-700 text-sm font-medium mb-1">Emergency Contact Number <span class="required">*</span></label>
                     <input type="text" name="emergency_no" id="emergency_no" class="form-control w-full p-2 border border-gray-300 rounded-md focus:ring focus:ring-blue-200 focus:border-blue-500" required pattern="[0-9]{10}" title="Emergency contact number must be 10 digits.">
                     <div id="emergencyNoError" class="invalid-feedback text-red-500 text-xs mt-1"></div>
+                </div>
+                <div>
+                    <label for="number" class="block text-gray-700 text-sm font-medium mb-1">Your Contact Number (Optional)</label>
+                    <input type="text" name="number" id="number" class="form-control w-full p-2 border border-gray-300 rounded-md focus:ring focus:ring-blue-200 focus:border-blue-500" pattern="[0-9]{10}" title="Contact number must be 10 digits.">
+                    <div id="numberError" class="invalid-feedback text-red-500 text-xs mt-1"></div>
+                </div>
+                <div>
+                    <label for="parent_no" class="block text-gray-700 text-sm font-medium mb-1">Parent's Contact Number (Optional)</label>
+                    <input type="text" name="parent_no" id="parent_no" class="form-control w-full p-2 border border-gray-300 rounded-md focus:ring focus:ring-blue-200 focus:border-blue-500" pattern="[0-9]{10}" title="Parent's contact number must be 10 digits.">
+                    <div id="parentNoError" class="invalid-feedback text-red-500 text-xs mt-1"></div>
+                </div>
+                <div>
+                    <label for="guardian_no" class="block text-gray-700 text-sm font-medium mb-1">Local Guardian's Contact Number (Optional)</label>
+                    <input type="text" name="guardian_no" id="guardian_no" class="form-control w-full p-2 border border-gray-300 rounded-md focus:ring focus:ring-blue-200 focus:border-blue-500" pattern="[0-9]{10}" title="Local Guardian's contact number must be 10 digits.">
+                    <div id="guardianNoError" class="invalid-feedback text-red-500 text-xs mt-1"></div>
                 </div>
             </div>
 
@@ -780,6 +795,7 @@
         const waiverDocumentInput = document.getElementById('waiver_document');
         const waiverDocumentRequiredAsterisk = document.getElementById('waiverDocumentRequiredAsterisk');
 
+        // New error message references for optional phone numbers
         const errorMessages = {
             name: document.getElementById('nameError'),
             email: document.getElementById('emailError'),
@@ -789,6 +805,9 @@
             mothers_name: document.getElementById('mothersNameError'),
             local_guardian_name: document.getElementById('localGuardianNameError'),
             emergency_no: document.getElementById('emergencyNoError'),
+            number: document.getElementById('numberError'), // New
+            parent_no: document.getElementById('parentNoError'), // New
+            guardian_no: document.getElementById('guardianNoError'), // New
             food_preference: document.getElementById('foodPreferenceError'),
             room_preference: document.getElementById('bedPreferenceError'),
             months: document.getElementById('stayDurationError'),
@@ -841,7 +860,7 @@
                 remarksRequiredAsterisk.textContent = '*';
 
                 waiverDocumentFieldGroup.classList.remove('hidden');
-                waiverDocumentInput.required = false;
+                waiverDocumentInput.required = false; // Waiver document is not strictly required here
                 waiverDocumentRequiredAsterisk.textContent = '';
             } else {
                 remarksFieldGroup.classList.add('hidden');
@@ -867,6 +886,16 @@
                 if (!element.checkValidity()) allValid = false;
             });
 
+            // Check validity for optional number fields if they have values
+            const optionalNumberFields = ['number', 'parent_no', 'guardian_no'];
+            optionalNumberFields.forEach(fieldName => {
+                const inputElement = document.getElementById(fieldName);
+                if (inputElement && inputElement.value.trim() !== '' && !inputElement.checkValidity()) {
+                    allValid = false;
+                }
+            });
+
+
             const foodPreferenceChecked = document.querySelector('input[name="food_preference"]:checked');
             if (!foodPreferenceChecked) allValid = false;
 
@@ -891,22 +920,38 @@
             waiverDocumentInput.required = false;
             waiverDocumentRequiredAsterisk.textContent = '';
 
+            // Ensure optional fields are not marked as required by default
             const localGuardianNameInput = document.getElementById('local_guardian_name');
             if (localGuardianNameInput) localGuardianNameInput.removeAttribute('required');
-            const localGuardianRequiredAsterisk = document.getElementById('localGuardianRequiredAsterisk');
-            if (localGuardianRequiredAsterisk) localGuardianRequiredAsterisk.textContent = '';
+            // No asterisk for localGuardianName, as it's not required in HTML
 
+            const numberInput = document.getElementById('number');
+            if (numberInput) numberInput.removeAttribute('required');
+
+            const parentNoInput = document.getElementById('parent_no');
+            if (parentNoInput) parentNoInput.removeAttribute('required');
+
+            const guardianNoInput = document.getElementById('guardian_no');
+            if (guardianNoInput) guardianNoInput.removeAttribute('required');
 
             feeWaiverCheckbox.addEventListener('change', toggleConditionalFields);
 
             const generalFormElements = registrationForm.querySelectorAll('input:not([type="radio"]):not([type="checkbox"]):not([type="file"]), select, textarea');
             generalFormElements.forEach(element => {
                 element.addEventListener('input', () => {
-                    if (element.checkValidity()) clearErrorMessage(element.name);
+                    // For optional number fields, only validate if they have a value
+                    if (['number', 'parent_no', 'guardian_no'].includes(element.name) && element.value.trim() === '') {
+                        clearErrorMessage(element.name);
+                    } else if (element.checkValidity()) {
+                        clearErrorMessage(element.name);
+                    }
                     checkFormValidity();
                 });
                 element.addEventListener('blur', () => {
-                    if (!element.checkValidity()) {
+                    // For optional number fields, only validate if they have a value
+                    if (['number', 'parent_no', 'guardian_no'].includes(element.name) && element.value.trim() === '') {
+                        clearErrorMessage(element.name);
+                    } else if (!element.checkValidity()) {
                         displayErrorMessage(element.name, element.validationMessage || 'This field is required.');
                     } else {
                         clearErrorMessage(element.name);
@@ -1086,6 +1131,16 @@
                     }
                 });
 
+                // Validate optional number fields on submit if they have values
+                const optionalNumberFields = ['number', 'parent_no', 'guardian_no'];
+                optionalNumberFields.forEach(fieldName => {
+                    const inputElement = document.getElementById(fieldName);
+                    if (inputElement && inputElement.value.trim() !== '' && !inputElement.checkValidity()) {
+                        isValid = false;
+                        displayErrorMessage(fieldName, inputElement.validationMessage || 'Please enter a valid 10-digit number.');
+                    }
+                });
+
                 const foodPreference = document.querySelector('input[name="food_preference"]:checked');
                 if (!foodPreference) {
                     isValid = false;
@@ -1204,7 +1259,6 @@
             });
         });
     </script>
-
 
 </body>
 

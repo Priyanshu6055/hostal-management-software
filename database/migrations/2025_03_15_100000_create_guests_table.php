@@ -21,6 +21,9 @@ class CreateGuestsTable extends Migration
             $table->unsignedTinyInteger('days')->nullable(); //addded
             $table->string('local_guardian_name');
             $table->string('emergency_no');
+            $table->string('number')->nullable();
+            $table->string('parent_no')->nullable();
+            $table->string('guardian_no')->nullable();
             $table->string('room_preference');
             $table->string('food_preference');
             $table->string('status')->default('pending');

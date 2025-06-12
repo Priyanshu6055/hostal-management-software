@@ -18,10 +18,13 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('gender');
             $table->string('scholar_no')->unique();
+            $table->string('number')->nullable();
+            $table->string('parent_no')->nullable();
+            $table->string('guardian_no')->nullable();
             $table->string('fathers_name');
             $table->string('mothers_name');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); // The resident user
-            $table->foreignId('bed_id')->nullable()->constrained('beds')->onDelete('set null'); // Assigned bed (optional at first)
+            $table->foreignId('bed_id')->nullable()->constrained('beds')->onDelete('set null');
             $table->enum('status', ['pending', 'active', 'inactive', 'checkout'])->default('pending'); // Resident status
             $table->foreignId('guest_id')->nullable()->constrained('guests')->onDelete('set null'); // Track origin guest
             $table->unsignedBigInteger('created_by')->nullable();
