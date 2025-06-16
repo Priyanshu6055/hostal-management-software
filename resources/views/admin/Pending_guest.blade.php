@@ -211,6 +211,24 @@
         </div>
     </div>
 
+
+    <div class="modal fade" id="confirmProcessModal" tabindex="-1" aria-labelledby="confirmProcessModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmProcessModalLabel">Process Guest Application</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>What action would you like to take for this guest application?</p>
+                    <div id="processGuestButtons" class="d-grid gap-2">
+                        {{-- Buttons will be dynamically added here by JavaScript --}}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -218,15 +236,10 @@
 
 
 <script>
-    /**
-     * Retrieves the CSRF token from the meta tag.
-     * @returns {string|null} The CSRF token or null if not found.
-     */
     function getCsrfToken() {
         const metaTag = document.querySelector('meta[name="csrf-token"]');
         return metaTag ? metaTag.getAttribute('content') : null;
     }
-
 
     function showCustomMessageBox(message, type = 'info', targetElementId = 'mainResponseMessage') {
         const messageContainer = document.getElementById(targetElementId);
@@ -245,12 +258,7 @@
         }
     }
 
-    /**
-     * Shows a message within a modal, typically for feedback inside a form.
-     * @param {string} message - The message to display.
-     * @param {'info'|'success'|'warning'|'danger'} type - The type of alert.
-     * @param {string} targetElementId - The ID of the container element within the modal.
-     */
+
     function showModalMessage(message, type = 'info', targetElementId = 'adjustPaymentMessage') {
         const messageContainer = document.getElementById(targetElementId);
         if (messageContainer) {
@@ -267,9 +275,6 @@
         }
     }
 
-    /**
-     * Fetches and displays the list of pending guests in the table.
-     */
     function fetchPendingGuests() {
         const guestList = document.getElementById("guestList");
         if (!guestList) {
@@ -301,26 +306,26 @@
                 guests.forEach((guest, index) => {
                     const accessoriesButton = `<button class="btn btn-info btn-sm" onclick='viewAccessories(${JSON.stringify(guest.accessories || [])})'>View</button>`;
                     const feeWaiverStatus = guest.fee_waiver ? 'Yes' : 'No';
-                    const remarksContent = guest.remarks || 'N/A'; // General guest remarks
+                    const remarksContent = guest.remarks || 'N/A';
                     const accountRemarkContent = guest.fee_exception && guest.fee_exception.account_remark ? guest.fee_exception.account_remark : 'N/A';
                     const guestStatusDisplay = guest.status || 'N/A';
 
                     let attachmentLink = 'N/A';
                     if (guest.attachment_path) {
-                        // FIX 2: Ensure /storage/ is prepended only once.
-                        // Assuming guest.attachment_path is relative (e.g., 'uploads/file.pdf')
                         attachmentLink = `<a href="/storage/${guest.attachment_path}" target="_blank" class="btn btn-sm btn-secondary">View</a>`;
                     }
 
                     let actionButtons = '';
                     if (guest.status === 'pending') {
-                        actionButtons = `
-                            <button class="btn btn-success btn-sm mb-1" onclick="approveGuest(${guest.id})">Process</button>
-                            <button class="btn btn-danger btn-sm mb-1" onclick="denyGuest(${guest.id})">Reject</button>
-                        `;
-                        if (guest.fee_waiver && !guest.fee_waiver_approved) {
-                            actionButtons += `
-                                <button class="btn btn-primary btn-sm mb-1" onclick="approveFeeWaiver(${guest.id})">Approve Fee Waiver</button>
+                        if (guest.fee_waiver) { // If fee waiver is 'yes' (1)
+                            actionButtons = `
+                                <button class="btn btn-primary btn-sm mb-1" onclick="showProcessGuestModal(${guest.id}, true)">Process</button>
+                                <button class="btn btn-danger btn-sm mb-1" onclick="denyGuest(${guest.id})">Reject Application</button>
+                            `;
+                        } else { // If fee waiver is 'no' (0)
+                            actionButtons = `
+                                <button class="btn btn-success btn-sm mb-1" onclick="approveGuest(${guest.id})">Approve</button>
+                                <button class="btn btn-danger btn-sm mb-1" onclick="denyGuest(${guest.id})">Reject Application</button>
                             `;
                         }
                     } else if (guest.status === 'accountant_reject') {
@@ -361,10 +366,7 @@
             });
     }
 
-    /**
-     * Sends a request to approve a guest.
-     * @param {number} guestId - The ID of the guest to approve.
-     */
+
     window.approveGuest = function(guestId) {
         fetch("{{ url('/api/admin/approved-guest') }}", {
                 method: "POST",
@@ -381,6 +383,9 @@
             .then(response => {
                 if (response.success) {
                     showCustomMessageBox(response.message || "Guest approved successfully.", 'success');
+                    if (confirmProcessModal) { // Check if modal instance exists
+                        confirmProcessModal.hide();
+                    }
                     fetchPendingGuests();
                 } else {
                     showCustomMessageBox(response.message || "Approval failed.", 'danger');
@@ -392,11 +397,12 @@
             });
     };
 
-    /**
-     * Sends a request to deny/reject a guest.
-     * @param {number} guestId - The ID of the guest to deny.
-     */
     window.denyGuest = function(guestId) {
+        const remark = prompt("Please enter a remark for rejecting this guest:");
+        if (remark === null) { // User clicked Cancel
+            return;
+        }
+        
         fetch("{{ url('/api/payment/reject') }}", {
                 method: "POST",
                 headers: {
@@ -405,13 +411,17 @@
                     "Accept": "application/json"
                 },
                 body: JSON.stringify({
-                    guest_id: guestId
+                    guest_id: guestId,
+                    admin_remarks: remark // Include the remark here
                 })
             })
             .then(response => response.json())
             .then(response => {
                 if (response.success) {
                     showCustomMessageBox(response.message || "Guest rejected successfully.", 'success');
+                    if (confirmProcessModal) { // Check if modal instance exists
+                        confirmProcessModal.hide();
+                    }
                     fetchPendingGuests();
                 } else {
                     showCustomMessageBox(response.message || "Rejection failed.", 'danger');
@@ -423,17 +433,13 @@
             });
     };
 
-    /**
-     * Displays a modal with accessories associated with a guest.
-     * @param {Array<Object>} accessories - An array of accessory objects.
-     */
     window.viewAccessories = function(accessories) {
         const accessoryList = document.getElementById("accessoryList");
         if (!accessoryList) {
             console.error("Accessory list element #accessoryList not found.");
             return;
         }
-        accessoryList.innerHTML = ""; // Clear previous content
+        accessoryList.innerHTML = "";
 
         if (!Array.isArray(accessories) || accessories.length === 0) {
             accessoryList.innerHTML = "<p>No accessories found for this guest.</p>";
@@ -467,12 +473,11 @@
         accessoryModal.show();
     };
 
-    // Global modal instances for easier access
     let editAmountModal;
     let reviewRejectModal;
+    let confirmProcessModal;
 
     document.addEventListener("DOMContentLoaded", function() {
-        // Initialize Bootstrap Modals
         editAmountModal = new bootstrap.Modal(document.getElementById('editAmountModal'), {
             backdrop: 'static',
             keyboard: false
@@ -483,20 +488,19 @@
             keyboard: false
         });
 
-        // Initial fetch of pending guests when the page loads
+        confirmProcessModal = new bootstrap.Modal(document.getElementById('confirmProcessModal'), {
+            backdrop: 'static',
+            keyboard: false
+        });
+
         fetchPendingGuests();
 
-        /**
-         * Event listener for the 'Adjust Payment' form submission.
-         * Handles the modification of waiver/payment details.
-         */
         const editAmountForm = document.getElementById('editAmountForm');
         if (editAmountForm) {
             editAmountForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
 
                 const formData = new FormData(editAmountForm);
-                // The 'guest_id' should be part of your form fields, e.g., <input type="hidden" name="guest_id" id="edit_guest_id">
 
                 try {
                     const response = await fetch('/api/admin/modify-waiver/payments', {
@@ -510,19 +514,18 @@
                     const result = await response.json();
                     const errorBox = document.getElementById('editAmountErrors');
                     if (errorBox) {
-                        errorBox.textContent = ''; // Clear previous errors
-                        errorBox.classList.add('d-none'); // Hide error box
+                        errorBox.textContent = '';
+                        errorBox.classList.add('d-none');
                     }
 
                     if (result.success) {
                         showCustomMessageBox(result.message || 'Payment updated successfully.', 'success');
-                        editAmountModal.hide(); // Hide the modal
-                        fetchPendingGuests(); // Refresh the table
+                        editAmountModal.hide();
+                        fetchPendingGuests();
                     } else {
                         if (errorBox) {
-                            errorBox.classList.remove('d-none'); // Show error box
+                            errorBox.classList.remove('d-none');
                             errorBox.textContent = result.message || 'Something went wrong.';
-                            // Display validation errors if any
                             if (result.errors) {
                                 for (const key in result.errors) {
                                     errorBox.innerHTML += `<br>${result.errors[key].join(', ')}`;
@@ -546,10 +549,6 @@
             });
         }
 
-        /**
-         * Event listener for the 'Review Rejected Payment' form submission.
-         * Handles the modification of waiver/payment details after a rejection.
-         */
         const reviewRejectForm = document.getElementById('reviewRejectForm');
         if (reviewRejectForm) {
             reviewRejectForm.addEventListener('submit', async function(e) {
@@ -567,17 +566,17 @@
                     const result = await response.json();
                     const errorBox = document.getElementById('reviewAmountErrors');
                     if (errorBox) {
-                        errorBox.textContent = ''; // Clear previous errors
-                        errorBox.classList.add('d-none'); // Hide error box
+                        errorBox.textContent = '';
+                        errorBox.classList.add('d-none');
                     }
 
                     if (result.success) {
                         showCustomMessageBox(result.message || 'Rejected payment reviewed and updated successfully.', 'success');
-                        reviewRejectModal.hide(); // Hide the new modal
-                        fetchPendingGuests(); // Refresh the table
+                        reviewRejectModal.hide();
+                        fetchPendingGuests();
                     } else {
                         if (errorBox) {
-                            errorBox.classList.remove('d-none'); // Show error box
+                            errorBox.classList.remove('d-none');
                             errorBox.textContent = result.message || 'Review update failed.';
                             if (result.errors) {
                                 for (const key in result.errors) {
@@ -601,21 +600,11 @@
             });
         }
 
-        /**
-         * Approves a fee waiver by opening the payment adjustment modal.
-         * This function essentially triggers the 'showAdjustPaymentModal' for a specific guest,
-         * indicating that approving a waiver might involve an administrative adjustment to fees.
-         * @param {number} guestId - The ID of the guest for whom to approve the fee waiver.
-         */
         window.approveFeeWaiver = function(guestId) {
+            confirmProcessModal.hide();
             showAdjustPaymentModal(guestId);
         };
 
-        /**
-         * Shows the Adjust Payment Modal and pre-fills it with guest's current fee exception details.
-         * This modal is primarily for approving fee waivers or general payment adjustments.
-         * @param {number} guestId - The ID of the guest whose payment details are to be adjusted.
-         */
         window.showAdjustPaymentModal = function(guestId) {
             const guestIdInput = document.getElementById('edit_guest_id');
             const hostelFeeInput = document.getElementById('hostel_fee');
@@ -628,18 +617,14 @@
             const currentDocumentInfo = document.getElementById('currentDocumentInfo');
             const editAmountErrors = document.getElementById('editAmountErrors');
             const calculatedTotalDisplay = document.getElementById('calculated_total_display');
-            // NEW: Get start_date and end_date input elements for edit modal
             const startDateInput = document.getElementById('start_date');
             const endDateInput = document.getElementById('end_date');
 
-
-            // Clear previous values and errors
             if (guestIdInput) guestIdInput.value = guestId;
             if (hostelFeeInput) hostelFeeInput.value = '';
             if (cautionMoneyInput) cautionMoneyInput.value = '';
             if (monthsInput) monthsInput.value = '';
             if (daysInput) daysInput.value = '';
-            // NEW: Clear date inputs
             if (startDateInput) startDateInput.value = '';
             if (endDateInput) endDateInput.value = '';
             if (facilityInput) facilityInput.value = '';
@@ -652,7 +637,6 @@
             }
             if (calculatedTotalDisplay) calculatedTotalDisplay.textContent = '0.00';
 
-            // Function to update the displayed total
             const updateCalculatedTotal = () => {
                 const hFee = parseFloat(hostelFeeInput.value) || 0;
                 const cMoney = parseFloat(cautionMoneyInput.value) || 0;
@@ -661,11 +645,9 @@
                 }
             };
 
-            // Add event listeners for instant calculation updates
             if (hostelFeeInput) hostelFeeInput.addEventListener('input', updateCalculatedTotal);
             if (cautionMoneyInput) cautionMoneyInput.addEventListener('input', updateCalculatedTotal);
 
-            // Fetch fee exception details from the dedicated API
             fetch(`/api/guest/${guestId}/fee-exception-details`)
                 .then(res => res.json())
                 .then(response => {
@@ -675,24 +657,16 @@
                         if (cautionMoneyInput) cautionMoneyInput.value = feeExceptionDetails.caution_money || '';
                         if (monthsInput) monthsInput.value = feeExceptionDetails.months || '';
                         if (daysInput) daysInput.value = feeExceptionDetails.days || '';
-                        // NEW: Populate start_date and end_date
                         if (startDateInput) startDateInput.value = feeExceptionDetails.start_date || '';
                         if (endDateInput) endDateInput.value = feeExceptionDetails.end_date || '';
                         if (facilityInput) facilityInput.value = feeExceptionDetails.facility || '';
                         if (remarksInput) remarksInput.value = feeExceptionDetails.remarks || '';
                         if (approvedByInput) approvedByInput.value = feeExceptionDetails.approved_by || '';
-                        updateCalculatedTotal(); // Update total after populating fields
+                        updateCalculatedTotal();
 
                         if (feeExceptionDetails.document_url && currentDocumentInfo) {
-                            // FIX 1: Add type="button" to prevent form submission.
-                            // FIX 2: Ensure /storage/ is prepended only once.
-                            // Assuming feeExceptionDetails.document_url is relative (e.g., 'waiver_docs/file.pdf')
-                            // currentDocumentInfo.innerHTML = `
-                            //     Current Document:
-                            //     <button type="button" class="btn btn-secondary btn-sm" onclick="window.open('/storage/${feeExceptionDetails.document_url}', '_blank')">
-                            //         View Document
-                            //     </button>
-                            // `;
+                            // You might want to display the document here, e.g., an image or a link
+                            // currentDocumentInfo.innerHTML = `<a href="${feeExceptionDetails.document_url}" target="_blank">View Document</a>`;
                         } else if (currentDocumentInfo) {
                             currentDocumentInfo.textContent = '';
                         }
@@ -715,35 +689,26 @@
             editAmountModal.show();
         };
 
-        /**
-         * Shows the Review Reject Modal and pre-fills it with guest's fee exception details
-         * for reviewing a previously rejected status.
-         * @param {number} guestId - The ID of the guest whose rejected status is to be reviewed.
-         */
         window.showReviewRejectModal = function(guestId) {
             const guestIdInput = document.getElementById('review_guest_id');
-            // const createdByInput = document.getElementById('review_created_by'); // Assumed to be static/blade set
             const hostelFeeInput = document.getElementById('review_hostel_fee');
             const cautionMoneyInput = document.getElementById('review_caution_money');
             const monthsInput = document.getElementById('review_months');
             const daysInput = document.getElementById('review_days');
             const facilityInput = document.getElementById('review_facility');
-            const remarksInput = document.getElementById('review_remarks'); // This will be the fee_exception remarks
+            const remarksInput = document.getElementById('review_remarks');
             const approvedByInput = document.getElementById('review_approved_by');
             const currentDocumentInfo = document.getElementById('review_currentDocumentInfo');
             const reviewAmountErrors = document.getElementById('reviewAmountErrors');
             const calculatedTotalDisplay = document.getElementById('review_calculated_total_display');
-            // NEW: Get start_date and end_date input elements for review modal
             const reviewStartDateInput = document.getElementById('review_start_date');
             const reviewEndDateInput = document.getElementById('review_end_date');
 
-            // Clear previous values and errors
             if (guestIdInput) guestIdInput.value = guestId;
             if (hostelFeeInput) hostelFeeInput.value = '';
             if (cautionMoneyInput) cautionMoneyInput.value = '';
             if (monthsInput) monthsInput.value = '';
             if (daysInput) daysInput.value = '';
-            // NEW: Clear date inputs for review modal
             if (reviewStartDateInput) reviewStartDateInput.value = '';
             if (reviewEndDateInput) reviewEndDateInput.value = '';
             if (facilityInput) facilityInput.value = '';
@@ -756,7 +721,6 @@
             }
             if (calculatedTotalDisplay) calculatedTotalDisplay.textContent = '0.00';
 
-            // Function to update the displayed total
             const updateCalculatedTotal = () => {
                 const hFee = parseFloat(hostelFeeInput.value) || 0;
                 const cMoney = parseFloat(cautionMoneyInput.value) || 0;
@@ -764,11 +728,9 @@
                     calculatedTotalDisplay.textContent = (hFee + cMoney).toFixed(2);
                 }
             };
-            // Add event listeners for instant calculation updates
             if (hostelFeeInput) hostelFeeInput.addEventListener('input', updateCalculatedTotal);
             if (cautionMoneyInput) cautionMoneyInput.addEventListener('input', updateCalculatedTotal);
 
-            // Fetch fee exception details from the dedicated API
             fetch(`/api/guest/${guestId}/fee-exception-details`)
                 .then(res => res.json())
                 .then(response => {
@@ -778,24 +740,16 @@
                         if (cautionMoneyInput) cautionMoneyInput.value = feeExceptionDetails.caution_money || '';
                         if (monthsInput) monthsInput.value = feeExceptionDetails.months || '';
                         if (daysInput) daysInput.value = feeExceptionDetails.days || '';
-                        // NEW: Populate start_date and end_date for review modal
                         if (reviewStartDateInput) reviewStartDateInput.value = feeExceptionDetails.start_date || '';
                         if (reviewEndDateInput) reviewEndDateInput.value = feeExceptionDetails.end_date || '';
                         if (facilityInput) facilityInput.value = feeExceptionDetails.facility || '';
                         if (remarksInput) remarksInput.value = feeExceptionDetails.remarks || '';
                         if (approvedByInput) approvedByInput.value = feeExceptionDetails.approved_by || '';
-                        updateCalculatedTotal(); // Update total after populating fields
+                        updateCalculatedTotal();
 
                         if (feeExceptionDetails.document_url && currentDocumentInfo) {
-                            // FIX 1: Add type="button" to prevent form submission.
-                            // FIX 2: Ensure /storage/ is prepended only once.
-                            // Assuming feeExceptionDetails.document_url is relative (e.g., 'waiver_docs/file.pdf')
-                            // currentDocumentInfo.innerHTML = `
-                            //     Current Document:
-                            //     <button type="button" class="btn btn-secondary btn-sm" onclick="window.open('/storage/${feeExceptionDetails.document_url}', '_blank')">
-                            //         View Document
-                            //     </button>
-                            // `;
+                            // You might want to display the document here, e.g., an image or a link
+                            // currentDocumentInfo.innerHTML = `<a href="${feeExceptionDetails.document_url}" target="_blank">View Document</a>`;
                         } else if (currentDocumentInfo) {
                             currentDocumentInfo.textContent = '';
                         }
@@ -818,14 +772,48 @@
             reviewRejectModal.show();
         };
 
-        /**
-         * Hides the edit amount modal.
-         */
         window.hideEditAmountSection = function() {
             editAmountModal.hide();
         };
+
+        // This function now correctly shows options based on fee_waiver status
+        window.showProcessGuestModal = function(guestId, hasFeeWaiver) {
+            const processGuestButtonsContainer = document.getElementById('processGuestButtons');
+            if (processGuestButtonsContainer) {
+                processGuestButtonsContainer.innerHTML = ''; // Clear previous buttons
+
+                if (hasFeeWaiver) {
+                    processGuestButtonsContainer.innerHTML += `
+                        <button class="btn btn-primary btn-lg mb-1" onclick="approveFeeWaiver(${guestId})">Approve Fee Waiver</button>
+                    `;
+                } else {
+                    processGuestButtonsContainer.innerHTML += `
+                        <button class="btn btn-success btn-lg mb-1" onclick="approveGuest(${guestId})">Approve Guest</button>
+                    `;
+                }
+                processGuestButtonsContainer.innerHTML += `
+                    <button class="btn btn-danger btn-lg mb-1" onclick="denyGuest(${guestId})">Reject Waiver</button>
+                `;
+                
+            } else {
+                console.error("Container for process guest buttons not found.");
+                alert("Could not open processing options. Please check console for errors.");
+                return;
+            }
+            confirmProcessModal.show();
+        };
     });
 </script>
+
+
+
+
+
+
+
+
+
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 @endsection

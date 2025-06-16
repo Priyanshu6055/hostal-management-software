@@ -22,7 +22,7 @@
             </select>
         </div>
 
-        <div class="mb-3">
+        <div class="mb-3" style="display: none;">
             <label for="subscription_type" class="form-label">Subscription Type</label>
             <input type="text" name="subscription_type" id="subscription_type_input" class="form-control" readonly>
         </div>
@@ -38,7 +38,7 @@
             </select>
         </div>
 
-        <div class="mb-3">
+        <div class="mb-3" style="display: none;">
             <label for="payment_method" class="form-label">Payment Method</label>
             <select name="payment_method" class="form-control" required>
                 <option value="">Select Method</option>
@@ -47,7 +47,7 @@
                 <option value="Bank Transfer">Bank Transfer</option>
                 <option value="Card">Card</option>
                 <option value="Other">Other</option>
-                <option value="Null">Null</option>
+                <option value="Null" selected>Null</option> {{-- Added 'selected' here --}}
             </select>
         </div>
 
@@ -66,7 +66,7 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
-    $(document).ready(async function () {
+    $(document).ready(async function() {
         const residentSelect = $('#resident_id');
         const feeSelect = $('#fee_id');
         const subscriptionTypeInput = $('#subscription_type_input');
@@ -82,7 +82,10 @@
                 residentSelect.append(`<option value="${res.id}">${res.name} (${res.scholar_no})</option>`);
             });
 
-            residentSelect.select2({ placeholder: "Select Resident", width: '100%' });
+            residentSelect.select2({
+                placeholder: "Select Resident",
+                width: '100%'
+            });
 
             // Fetch fees
             const feeRes = await fetch("{{ url('/api/fees') }}");
@@ -97,7 +100,7 @@
                 }
             });
 
-            feeSelect.on('change', function () {
+            feeSelect.on('change', function() {
                 const selectedText = $('#fee_id option:selected').data('name');
                 subscriptionTypeInput.val(selectedText || '');
             });
@@ -108,7 +111,7 @@
         }
 
         // Form Submit
-        $('#subscriptionForm').on('submit', async function (e) {
+        $('#subscriptionForm').on('submit', async function(e) {
             e.preventDefault();
 
             const formData = {

@@ -120,7 +120,7 @@
                         <input type="hidden" name="guest_id" id="status_guest_id">
                         <div class="mb-3">
                             <label for="guest_status_select" class="form-label">Select Status:</label>
-                            <select class="form-select" id="guest_status_select" name="status" required>
+                            <select class="form-select" id="guest_status_select" name="status" >
                                 <option value="">-- Select Status --</option>
                                 <option value="accountant_reject">Reject By Accountant</option>
                             </select>

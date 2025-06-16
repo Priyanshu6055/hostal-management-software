@@ -7,15 +7,22 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
-            background-color: #f8f9fa; /* Light background for the page */
+            background-color: #f8f9fa;
+            /* Light background for the page */
         }
+
         .container {
-            max-width: 600px; /* Limit form width for better readability */
+            max-width: 600px;
+            /* Limit form width for better readability */
         }
+
         .card {
-            border-radius: 0.75rem; /* Slightly rounded corners */
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15); /* Stronger shadow */
+            border-radius: 0.75rem;
+            /* Slightly rounded corners */
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            /* Stronger shadow */
         }
+
         .success-message,
         .error-message,
         .resident-info {
@@ -24,37 +31,45 @@
             border-radius: 0.5rem;
             margin-bottom: 1rem;
         }
+
         .success-message {
             background-color: #d4edda;
             color: #155724;
             border-color: #c3e6cb;
         }
+
         .error-message {
             background-color: #f8d7da;
             color: #721c24;
             border-color: #f5c6cb;
         }
+
         .form-label {
             font-weight: 500;
             color: #343a40;
         }
+
         .form-control:read-only {
             background-color: #e9ecef;
             opacity: 1;
         }
+
         .btn-success {
             background-color: #28a745;
             border-color: #28a745;
             transition: background-color 0.2s ease, border-color 0.2s ease;
         }
+
         .btn-success:hover {
             background-color: #218838;
             border-color: #1e7e34;
         }
+
         .btn-primary {
             background-color: #007bff;
             border-color: #007bff;
         }
+
         .btn-primary:hover {
             background-color: #0069d9;
             border-color: #0062cc;
@@ -78,28 +93,28 @@
                 <h3 class="mb-4 text-center text-primary">Guest Payment Form</h3>
 
                 @php
-                    use App\Models\Accessory; // Ensure this model is correctly imported and exists
+                use App\Models\Accessory; // Ensure this model is correctly imported and exists
 
-                    $guest_id = request()->query('guest_id');
-                    $amount = request()->query('amount'); // Still needed here for display only
-                    $accessory_ids = request()->query('accessory_ids', []);
+                $guest_id = request()->query('guest_id');
+                $amount = request()->query('amount'); // Still needed here for display only
+                $accessory_ids = request()->query('accessory_ids', []);
 
-                    // Ensure accessory_ids is an array, handle comma-separated string if passed
-                    if (!is_array($accessory_ids)) {
-                        $accessory_ids = explode(',', $accessory_ids);
-                    }
+                // Ensure accessory_ids is an array, handle comma-separated string if passed
+                if (!is_array($accessory_ids)) {
+                $accessory_ids = explode(',', $accessory_ids);
+                }
 
-                    $accessory_head_ids = [];
+                $accessory_head_ids = [];
 
-                    // Fetch accessory_head_ids from Accessory model
-                    foreach ($accessory_ids as $accessory_id) {
-                        $accessory = Accessory::find($accessory_id);
-                        if ($accessory && $accessory->accessory_head_id) {
-                            $accessory_head_ids[] = $accessory->accessory_head_id;
-                        }
-                    }
-                    // Remove duplicates if any, as accessory_head_ids might repeat
-                    $accessory_head_ids = array_unique($accessory_head_ids);
+                // Fetch accessory_head_ids from Accessory model
+                foreach ($accessory_ids as $accessory_id) {
+                $accessory = Accessory::find($accessory_id);
+                if ($accessory && $accessory->accessory_head_id) {
+                $accessory_head_ids[] = $accessory->accessory_head_id;
+                }
+                }
+                // Remove duplicates if any, as accessory_head_ids might repeat
+                $accessory_head_ids = array_unique($accessory_head_ids);
                 @endphp
 
                 <form id="paymentForm">
@@ -110,7 +125,7 @@
 
                     {{-- Dynamically add hidden inputs for each accessory_head_id --}}
                     @foreach($accessory_head_ids as $head_id)
-                        <input type="hidden" name="accessory_head_ids[]" value="{{ $head_id }}">
+                    <input type="hidden" name="accessory_head_ids[]" value="{{ $head_id }}">
                     @endforeach
 
                     <div class="mb-3">
@@ -172,34 +187,28 @@
         const errorMsg = document.getElementById('errorMsg');
         const paymentSection = document.getElementById('paymentSection');
         const residentInfo = document.getElementById('residentInfo');
-        const guestPasswordDisplay = document.getElementById('guestPasswordDisplay'); // Element to display password
+        const guestPasswordDisplay = document.getElementById('guestPasswordDisplay');
 
-        // Function to reset form errors
         function resetFormErrors() {
             document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
             document.querySelectorAll('.invalid-feedback').forEach(el => el.innerText = '');
             errorMsg.style.display = 'none';
-            errorMsg.innerText = "❌ Payment failed. Please check the form for errors."; // Reset to default message
+            errorMsg.innerText = "❌ Payment failed. Please check the form for errors.";
         }
 
         form.addEventListener('submit', function(e) {
-            e.preventDefault(); // Prevent default form submission
+            e.preventDefault();
+            resetFormErrors();
 
-            resetFormErrors(); // Clear previous errors
-
-            const formData = new FormData(form); // Get form data
+            const formData = new FormData(form);
 
             axios.post('/api/guest-payments', formData)
                 .then(response => {
-                    // Handle successful payment
                     if (response.status === 200 || response.status === 201) {
-                        paymentSection.style.display = 'none'; // Hide payment form
-                        successMsg.style.display = 'block'; // Show success message
+                        paymentSection.style.display = 'none';
+                        successMsg.style.display = 'block';
+                        guestPasswordDisplay.innerText = '12345678'; // Hardcoded password
 
-                        // Set the hardcoded password directly
-                        guestPasswordDisplay.innerText = '12345678';
-
-                        // After a delay, hide success and show resident info
                         setTimeout(() => {
                             successMsg.style.display = 'none';
                             residentInfo.style.display = 'block';
@@ -207,48 +216,41 @@
                     }
                 })
                 .catch(error => {
-                    // Handle errors from the server
-                    errorMsg.style.display = 'block'; // Show error message div
+                    errorMsg.style.display = 'block';
 
                     if (error.response) {
-                        const { status, data } = error.response;
+                        const {
+                            status,
+                            data
+                        } = error.response;
 
                         if (status === 400 && data.message === 'Guest has already paid.') {
-                            // Specific business logic error (e.g., from your controller)
                             errorMsg.innerText = "❌ Guest has already paid for this accommodation.";
                         } else if (status === 422 && data.errors) {
-                            // Laravel validation errors
                             const errors = data.errors;
                             for (const field in errors) {
-                                // Find the input element by name (e.g., 'payment_method', 'transaction_id')
                                 const input = document.querySelector(`[name="${field}"]`);
-                                // Find the feedback div by ID (e.g., 'payment_method_error')
                                 const errorEl = document.getElementById(`${field}_error`);
 
                                 if (input) {
-                                    input.classList.add('is-invalid'); // Add Bootstrap's invalid class
+                                    input.classList.add('is-invalid');
                                 }
                                 if (errorEl) {
-                                    errorEl.innerText = errors[field][0]; // Display the first error message
+                                    errorEl.innerText = errors[field][0];
                                 }
                             }
                             errorMsg.innerText = "❌ Please correct the highlighted errors in the form.";
                         } else if (status === 500 && data.message) {
-                            // Custom 500 error message from your backend
                             errorMsg.innerText = `❌ Server Error: ${data.message}`;
-                            console.error("API Error Response:", error.response); // Log the full response for debugging
-                        }
-                        else {
-                            // General server error (e.g., 500 without specific message, or other unexpected API errors)
+                            console.error("API Error Response:", error.response);
+                        } else {
                             errorMsg.innerText = "❌ Something went wrong on the server. Please try again.";
-                            console.error("API Error Response:", error.response); // Log the full response for debugging
+                            console.error("API Error Response:", error.response);
                         }
                     } else if (error.request) {
-                        // The request was made but no response was received
                         errorMsg.innerText = "❌ No response from the server. Please check your network connection.";
                         console.error("API Error Request:", error.request);
                     } else {
-                        // Something else happened in setting up the request
                         errorMsg.innerText = "❌ An unexpected error occurred. Please try again.";
                         console.error("API Error Message:", error.message);
                     }

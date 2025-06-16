@@ -12,8 +12,8 @@
                     <th>Reason</th>
                     <th>Account Approval</th>
                     <th>Admin Approval</th>
-                    <th>Remarks</th> {{-- Added Remarks column --}}
-                    <th>Acessory Check</th> {{-- Added Action column --}}
+                    <th>Remarks</th>
+                    <th>Acessory Check</th>
                     <th>View Details</th>
                 </tr>
             </thead>
@@ -21,7 +21,7 @@
             </tbody>
         </table>
         <p id="noData" style="display:none;">No checkout status found.</p>
-        <p id="fetchError" class="text-danger text-center mt-3" style="display:none;">Error loading checkout status. Please try again.</p>
+        <p id="fetchError" class="text-danger text-center mt-3" style="display:none;"></p>
     </div>
 
     <div class="modal fade" id="checkoutDetailsModal" tabindex="-1" aria-labelledby="checkoutDetailsModalLabel" aria-hidden="true">
@@ -69,7 +69,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function fetchCheckoutStatus(residentId) {
-        // Validate resident ID
         if (!residentId || isNaN(parseInt(residentId)) || parseInt(residentId) <= 0) {
             console.error("Resident ID is invalid or not found:", residentId);
             fetchErrorMsg.innerText = "Resident ID not found or invalid. Please check your session or authentication.";
@@ -85,10 +84,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 return response.json();
             })
             .then(apiResponse => {
-                checkoutTableBody.innerHTML = ''; // Clear previous data
-                fetchErrorMsg.style.display = 'none'; // Hide any previous error messages
+                checkoutTableBody.innerHTML = '';
+                fetchErrorMsg.style.display = 'none';
 
-                // Access the 'data' object within the API response for the main table
                 const checkoutData = apiResponse.data;
 
                 if (!checkoutData || Object.keys(checkoutData).length === 0) {
@@ -103,60 +101,47 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${checkoutData.reason ?? 'N/A'}</td>
                     <td><span class="badge ${getBadgeClass(checkoutData.account_approval)}">${capitalize(checkoutData.account_approval)}</span></td>
                     <td><span class="badge ${getBadgeClass(checkoutData.admin_approval)}">${capitalize(checkoutData.admin_approval)}</span></td>
-                    <td>${checkoutData.remarks ?? 'N/A'}</td> {{-- Display remarks --}}
-                    <td>${formatAction(checkoutData.action)}</td> {{-- Display action --}}
+                    <td>${checkoutData.remarks ?? 'N/A'}</td>
+                    <td>${formatAction(checkoutData.action)}</td>
                     <td>
                         <button class="btn btn-primary btn-sm view-details-btn" data-resident-id="${residentId}">View Details</button>
                     </td>
                 `;
                 checkoutTableBody.appendChild(row);
 
-                // Add event listener for the "View Details" button
                 const viewDetailsButton = row.querySelector('.view-details-btn');
                 viewDetailsButton.addEventListener('click', () => {
-                    showCheckoutDetails(residentId, checkoutData); // Pass checkoutData to showCheckoutDetails
+                    showCheckoutDetails(residentId, checkoutData);
                 });
             })
             .catch(err => {
                 console.error('Error fetching checkout status:', err);
                 fetchErrorMsg.innerText = `Error fetching checkout status: ${err.message}. Please try again.`;
                 fetchErrorMsg.style.display = 'block';
-                noDataMsg.style.display = 'none'; // Hide no data message if there's an error
+                noDataMsg.style.display = 'none';
             });
     }
 
     async function showCheckoutDetails(residentId, checkoutDetailsFromMainAPI) {
         const checkoutDetailsContent = document.getElementById('checkoutDetailsContent');
-        checkoutDetailsContent.innerHTML = '<p>Loading details...</p>'; // Show loading message
+        checkoutDetailsContent.innerHTML = '<p>Loading details...</p>';
 
         try {
-            // This API call's response structure is based on the provided getCheckoutLogs controller:
-            // { success: true, message: "...", data: [...] } where 'data' is the array of accessory logs.
             const response = await fetch(`http://127.0.0.1:8000/api/resident-checkout-logs/${residentId}`);
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
                 const errorMessage = errorData.message || `Network response was not ok, status: ${response.status}`;
                 throw new Error(errorMessage);
             }
-            const apiResponse = await response.json(); // This holds { success, message, data: accessory_logs_array, errors }
+            const apiResponse = await response.json();
 
             let detailsHTML = '';
 
-            // Check the success flag from the API response first
             if (apiResponse.success === false) {
                 detailsHTML += `<p class="text-danger">${apiResponse.message || 'Failed to fetch checkout details from API.'}</p>`;
             } else {
-                // Display Resident Information: This API endpoint (getCheckoutLogs) does NOT return resident details directly.
-                // You would need another API endpoint to get comprehensive resident details if needed here.
-                detailsHTML += `
-                    <h4>Resident Information</h4>
-                    <p><strong>Resident ID:</strong> ${residentId}</p>
-                    <p><strong>Name:</strong> N/A (Resident name not available from this API endpoint)</p>
-                    <hr>
-                `;
-
-                // Display Checkout Details: Now using checkoutDetailsFromMainAPI
-                const depositedAmount = 10000; // Fixed deposited amount as requested
+                // Display Checkout Details
+                const depositedAmount = 10000;
                 let totalDebit = 0;
                 const accessoryLogs = Array.isArray(apiResponse.data) ? apiResponse.data : [];
 
@@ -199,7 +184,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             <tbody>
                     `;
 
-                    // Fetch active accessories to map IDs to names
                     const accessoriesResponse = await fetch('http://127.0.0.1:8000/api/accessories/active');
                     if (!accessoriesResponse.ok) {
                         console.warn(`Failed to fetch active accessories, status: ${accessoriesResponse.status}. Accessory names might be "Unknown".`);
@@ -234,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     detailsHTML += `<p>No accessory logs found for this checkout.</p>`;
                 }
-            } // End of if (apiResponse.success === false) else block
+            }
 
             checkoutDetailsContent.innerHTML = detailsHTML;
             checkoutDetailsModal.show();
@@ -265,6 +249,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 </script>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 @endsection

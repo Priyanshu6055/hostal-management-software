@@ -303,6 +303,7 @@ Route::get('/pending/{resident_id}/subscription', [SubscriptionController::class
 
 Route::get('/payments/all/resident/{resident_id}', [PaymentController::class, 'getAllPaymentsByResidentId']);
 Route::get('/combined/pending/subscription', [SubscriptionController::class, 'getCombinedSubscription']);
+Route::post('/admin/subscribe-resident', [SubscriptionController::class, 'adminSubscribeResident']);
 
 // Fine Routes
 Route::post('/admin/fine', [FineController::class, 'adminSetFine']);

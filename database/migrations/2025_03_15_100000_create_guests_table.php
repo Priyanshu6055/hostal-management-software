@@ -20,6 +20,10 @@ class CreateGuestsTable extends Migration
             $table->unsignedTinyInteger('months')->default(3)->comment('Duration of stay in months');
             $table->unsignedTinyInteger('days')->nullable(); //addded
             $table->string('local_guardian_name');
+            $table->string('attachment_path')->nullable();
+            $table->text('remarks')->nullable();
+            $table->text('admin_remarks')->nullable();
+            $table->boolean('fee_waiver')->default(false);
             $table->string('emergency_no');
             $table->string('number')->nullable();
             $table->string('parent_no')->nullable();
@@ -36,5 +40,4 @@ class CreateGuestsTable extends Migration
     {
         Schema::dropIfExists('guests');
     }
-
 }

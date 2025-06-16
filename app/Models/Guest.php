@@ -28,7 +28,8 @@ class Guest extends Model
         'status',
         'months',
         'attachment_path',
-        'days'
+        'days',
+        'admin_remarks'
     ];
 
     public function accessory()
