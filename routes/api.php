@@ -34,12 +34,13 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\Payment;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\FineController;
 use App\Http\Controllers\RoomChangeMessageController;
 use App\Http\Controllers\FeeExceptionController;
 use App\Notifications\CustomAppNotification;
 use Illuminate\Support\Facades\Validator;
 use App\Services\MailService;
-
+use App\Http\Controllers\NotificationController;
 
 
 
@@ -172,8 +173,8 @@ Route::get('/room-change/requests', [RoomChangeController::class, 'getAllRequest
 
 // Resident fetches their room change requests
 Route::get('/room-change-requests/{id}', [RoomChangeController::class, 'getRoomChangeRequestById']);
-Route::get('/resident/{residentId}/room-change-requests', [RoomChangeController::class, 'getRoomChangeRequestsByResidentId']);
 
+Route::get('/resident/{residentId}/room-change-requests', [RoomChangeController::class, 'getRoomChangeRequestsByResidentId']);
 
 // Admin responds with available/not available + optional remark
 Route::post('/room-change/respond/{request_id}', [RoomChangeController::class, 'respondToRequest']);
@@ -206,19 +207,19 @@ Route::get('/room-change/requests', [RoomChangeController::class, 'getAllRoomCha
 Route::prefix('grievances')->group(function () {
     // Submit a grievance
     Route::post('/submit', [GrievanceController::class, 'submitGrievance']);
-    
+
     // Admin can respond to a grievance
     Route::post('/respond/{id}', [GrievanceController::class, 'respondToGrievance']);
-    
+
     // Resident can respond with a message and can agree/disagree with the response
     Route::post('/resident/respond/{id}', [GrievanceController::class, 'residentRespond']);
-    
+
     // Fetch all grievances for the admin
     Route::get('/', [GrievanceController::class, 'getAllGrievances']);
-    
+
     // Fetch grievance by ID for admin/resident
     Route::get('/{id}', [GrievanceController::class, 'getGrievanceById']);
-    
+
     // Close grievance by resident (final resolution)
     Route::put('/close/{id}', [GrievanceController::class, 'closeGrievance']);
 
@@ -299,13 +300,18 @@ Route::post('/residents/subscribe', [SubscriptionController::class, 'subscribeTo
 Route::post('/subscription/pay', [PaymentController::class, 'subscribePay']);
 Route::get('/resident/{resident_id}/subscription', [SubscriptionController::class, 'getResidentSubscriptions']);
 Route::get('/pending/{resident_id}/subscription', [SubscriptionController::class, 'getPendingResidentSubscriptions']);
-Route::post('/admin/subscribe-resident', [SubscriptionController::class, 'adminSubscribeResident']);
+
 Route::get('/payments/all/resident/{resident_id}', [PaymentController::class, 'getAllPaymentsByResidentId']);
 Route::get('/combined/pending/subscription', [SubscriptionController::class, 'getCombinedSubscription']);
 
+// Fine Routes
+Route::post('/admin/fine', [FineController::class, 'adminSetFine']);
+Route::post('/accountant/set-fine-amount', [FineController::class, 'accountantSetFineAmount']);
+Route::get('/accountant/view-fine-details', [FineController::class, 'viewAllFineDetails']);
 
 
 Route::get('/resident/all', [StaffController::class, 'getresidents']);
+
 Route::get('/subscription_payment', function () {
     return view('resident.subscription_payment');
 })->name('resident.subscription.payment');
@@ -356,9 +362,6 @@ Route::post('/send-notification', function (Request $request) {
 
 
 
-
-
-
 //AWS SMS Service for test
 
 Route::post('/send-sms', function (Request $request) {
@@ -383,7 +386,6 @@ Route::post('/send-sms', function (Request $request) {
         'data' => $response,
     ]);
 });
-
 
 
 
@@ -423,14 +425,26 @@ Route::post('/send-mail', function (Request $request) {
 });
 
 
-
 Route::post('/accountant/update-guest-status', [FeeExceptionController::class, 'updateGuestStatusWithRemark']);
 
-
 Route::get('/guest/{guest}/total-amount', [GuestController::class, 'getTotalAmount'])->middleware('auth:sanctum');
-
 
 
 Route::get('/guest/{guest}/fee-exception', [FeeExceptionController::class, 'showFeeException']);
 
 Route::get('/guest/{guest}/fee-exception-details', [FeeExceptionController::class, 'getFeeExceptionDetailsForEdit']);
+
+
+// Notification API Routes
+Route::prefix('notifications')->group(function () {
+
+    Route::get('resident/{residentId}', [NotificationController::class, 'getPaginatedResidentNotifications']);
+
+    Route::get('resident/{residentId}/all', [NotificationController::class, 'getAllResidentNotifications']);
+
+    Route::get('resident/{residentId}/unread', [NotificationController::class, 'getUnreadResidentNotifications']);
+
+    Route::post('{id}/read', [NotificationController::class, 'markNotificationAsRead']);
+
+    Route::get('payments', [NotificationController::class, 'getPaymentNotifications']);
+});

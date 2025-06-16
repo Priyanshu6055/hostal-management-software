@@ -10,7 +10,21 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- FontAwesome CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- ✅ CSRF Token -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    <!-- Alpine.js CDN -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+        <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    {{-- You can add your custom CSS links here if any --}}
+    {{-- <link rel="stylesheet" href="{{ asset('css/app.css') }}"> --}}
+
+
+    <!-- Your CSS -->
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     <style>
         body {
             display: flex;
@@ -91,6 +105,11 @@
             justify-content: space-between;
             align-items: center;
         }
+
+        .notify{
+            display: block;
+            /* position: absolute; */
+        }
     </style>
 </head>
 
@@ -100,6 +119,8 @@
     <div class="sidebar">
         <h4>Resident Panel</h4>
         <hr>
+
+        
 
         <form method="POST" action="{{ route('logout') }}" class="d-inline">
             @csrf
@@ -119,8 +140,6 @@
         <a href="{{ url('/resident/feedback') }}" class="nav-link"><i class="fas fa-comment-dots"></i> Feedback</a>
         <a href="{{ url('/resident/notices') }}" class="nav-link"><i class="fas fa-bell"></i> Notices</a>
         <a href="{{ url('/resident/fine') }}" class="nav-link"><i class="fas fa-gavel text-danger"></i> Fine Payments</a>
-       
-       
       <!-- <a href="{{ url('/resident/subscription') }}" class="nav-link"><i class="fas fa-clipboard-list"></i> Subscription</a> -->
         <a href="{{ url('/resident/subscription_type') }}" class="nav-link"><i class="fas fa-list-alt"></i> Subscription List</a>
         <a href="{{ route('resident.checkout') }}" class="nav-link"><i class="fas fa-door-open"></i> Checkout</a>
@@ -132,7 +151,12 @@
     <div class="content">
         <div class="topbar">
             <h5>Resident Dashboard</h5>
+            
             <span>Welcome, Resident</span>
+
+            <div class="notify">
+                <x-notification-icon />
+            </div>
         </div>
 
         @yield('content') <!-- Dynamic content goes here -->

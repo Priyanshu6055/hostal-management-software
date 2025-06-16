@@ -81,6 +81,17 @@
                         <textarea class="form-control" id="remarks" name="remarks" readonly></textarea>
                     </div>
 
+                    {{-- Added Start Date and End Date fields --}}
+                    <div class="mb-3">
+                        <label for="start_date" class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="start_date" name="start_date" readonly>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="end_date" class="form-label">End Date</label>
+                        <input type="date" class="form-control" id="end_date" name="end_date" readonly>
+                    </div>
+ 
                     <div class="mb-3">
                         <label for="document" class="form-label">Upload Document</label>
                         {{-- Removed input type="file" as it's not editable, display only --}}
@@ -95,7 +106,7 @@
         </div>
     </div>
 
-    
+
     {{-- New Modal for Update Status and Remark --}}
     <div class="modal fade" id="updateStatusModal" tabindex="-1" aria-labelledby="updateStatusModalLabel" aria-hidden="true">
         <div class="modal-dialog">
@@ -201,7 +212,6 @@
                         let accessoriesButton = `<button class="btn btn-info btn-sm" onclick='viewAccessories(${JSON.stringify(guest.accessories || [])})'>View</button>`;
 
                         const feeWaiverStatus = guest.fee_waiver ? 'Yes' : 'No';
-                        // const currentPayableDisplay = guest.payable_amount !== null && guest.payable_amount !== undefined ? guest.payable_amount : 'Not Set'; // Removed this line
                         const remarksContent = guest.remarks || 'N/A'; // General guest remarks
 
                         let attachmentLink = 'N/A';
@@ -215,7 +225,6 @@
                                 <td>${guest.scholar_no || 'N/A'}</td>
                                 <td>${guest.name || '-'}</td>
                                 <td>${feeWaiverStatus}</td>
-                                {{-- <td>${currentPayableDisplay}</td> --}} {{-- Removed this cell --}}
                                 <td>${remarksContent}</td>
                                 <td>${attachmentLink}</td>
                                 <td>${accessoriesButton}</td>
@@ -245,6 +254,9 @@
             const approvedByInput = document.getElementById('approved_by');
             const currentDocumentInfo = document.getElementById('currentDocumentInfo');
             const errorBox = document.getElementById('editAmountErrors');
+            // NEW: Get references to the start_date and end_date input fields
+            const startDateInput = document.getElementById('start_date');
+            const endDateInput = document.getElementById('end_date');
 
             // Reset form fields and error messages
             guestIdInput.value = guestId;
@@ -255,6 +267,8 @@
             remarksInput.value = '';
             approvedByInput.value = '';
             currentDocumentInfo.textContent = '';
+            startDateInput.value = ''; // Reset start_date
+            endDateInput.value = ''; // Reset end_date
             errorBox.textContent = '';
             errorBox.classList.add('d-none');
 
@@ -270,6 +284,9 @@
                         facilityInput.value = feeExceptionDetails.facility || '';
                         remarksInput.value = feeExceptionDetails.remarks || '';
                         approvedByInput.value = feeExceptionDetails.approved_by || '';
+                        // NEW: Populate start_date and end_date fields
+                        startDateInput.value = feeExceptionDetails.start_date || '';
+                        endDateInput.value = feeExceptionDetails.end_date || '';
 
                         // Display existing document path/URL if available
                         if (feeExceptionDetails.document_url) {
@@ -415,6 +432,8 @@
         };
     });
 </script>
+
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 @endsection

@@ -4,11 +4,10 @@
 <div class="container mt-5">
     <h2 class="text-xl font-semibold mb-4">Assign Fine to Resident</h2>
 
-    <!-- Success & Error Alerts -->
     <div id="success-message" class="alert alert-success d-none"></div>
     <div id="error-message" class="alert alert-danger d-none"></div>
 
-    <form id="subscriptionForm">
+    <form id="fineAssignmentForm">
         <div class="mb-3">
             <label for="resident_id" class="form-label">Resident</label>
             <select name="resident_id" id="resident_id" class="form-control" required>
@@ -16,23 +15,17 @@
             </select>
         </div>
 
-        <!-- Hidden Inputs -->
-        <input type="hidden" name="fee_head_id" id="fee_head_id">
-        <input type="hidden" name="subscription_type" id="subscription_type_input" value="Other">
-        <input type="hidden" name="payment_method" value="Null">
-        <input type="hidden" name="created_by" value="{{ auth()->user()->id }}">
+        {{-- Hidden Inputs --}}
+        <input type="hidden" name="subscription_type" value="Other">
+        <input type="hidden" name="duration" value="">
+        <input type="hidden" name="created_by" value="1">
 
         <div class="mb-3">
-            <label for="custom_amount" class="form-label">Custom Amount</label>
-            <input type="number" name="custom_amount" step="0.01" class="form-control" required>
+            <label for="remarks" class="form-label">Remarks (required for Other)</label>
+            <textarea name="remarks" id="remarks" class="form-control" required></textarea>
         </div>
 
-        <div class="mb-3">
-            <label for="remarks" class="form-label">Remarks (optional)</label>
-            <textarea name="remarks" class="form-control"></textarea>
-        </div>
-
-        <button type="submit" class="btn btn-primary">Submit</button>
+        <button type="submit" class="btn btn-primary">Assign Fine</button>
     </form>
 </div>
 
@@ -44,11 +37,8 @@
 <script>
     $(document).ready(async function () {
         const residentSelect = $('#resident_id');
-        const feeHeadIdInput = $('#fee_head_id');
-        const subscriptionTypeInput = $('#subscription_type_input');
 
         try {
-            // Fetch residents
             const residentRes = await fetch("{{ url('/api/residents') }}");
             const residentData = await residentRes.json();
 
@@ -59,39 +49,32 @@
 
             residentSelect.select2({ placeholder: "Select Resident", width: '100%' });
 
-            // Fetch fee types
-            const feeRes = await fetch("{{ url('/api/fees') }}");
-            const feeData = await feeRes.json();
-
-            const otherFee = feeData.data.find(fee => fee.name === "Other");
-            if (otherFee) {
-                feeHeadIdInput.val(otherFee.fee_head_id);
-                subscriptionTypeInput.val("Other");
-            } else {
-                $('#error-message').removeClass('d-none').text('Fee type "Other" not found.');
-            }
-
         } catch (err) {
             console.error(err);
-            $('#error-message').removeClass('d-none').text('Failed to load resident or fee type data.');
+            $('#error-message').removeClass('d-none').text('Failed to load resident data. Check API endpoint.');
         }
 
-        // Handle form submission
-        $('#subscriptionForm').on('submit', async function (e) {
+        $('#fineAssignmentForm').on('submit', async function (e) {
             e.preventDefault();
+
+            $('#success-message').addClass('d-none').text('');
+            $('#error-message').addClass('d-none').text('');
 
             const formData = {
                 resident_id: $('#resident_id').val(),
-                fee_head_id: $('#fee_head_id').val(),
-                subscription_type: $('#subscription_type_input').val(),
-                custom_amount: parseFloat($('input[name="custom_amount"]').val()),
-                remarks: $('textarea[name="remarks"]').val(),
-                payment_method: 'Null',
-                created_by: $('input[name="created_by"]').val()
+                subscription_type: 'Other',
+                duration: '', // Not required for 'Other'
+                created_by: '{{ auth()->id() }}',
+                remarks: $('#remarks').val()
             };
 
+            if (!formData.resident_id  || !formData.remarks.trim()) {
+                $('#error-message').removeClass('d-none').text('Please fill all required fields.');
+                return;
+            }
+
             try {
-                const res = await fetch("{{ url('/api/admin/subscribe-resident') }}", {
+                const res = await fetch("{{ url('/api/admin/fine') }}", {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -104,17 +87,18 @@
 
                 if (res.ok && result.success) {
                     $('#success-message').removeClass('d-none').text(result.message || 'Fine assigned successfully.');
-                    $('#error-message').addClass('d-none');
-                    $('#subscriptionForm')[0].reset();
+                    $('#fineAssignmentForm')[0].reset();
                     $('#resident_id').val(null).trigger('change');
                 } else {
-                    $('#error-message').removeClass('d-none').text(result.message || 'Assignment failed.');
-                    $('#success-message').addClass('d-none');
+                    let errorMessage = result.message || 'Fine assignment failed.';
+                    if (result.errors) {
+                        errorMessage += '<br>' + Object.values(result.errors).map(err => err.join(', ')).join('<br>');
+                    }
+                    $('#error-message').removeClass('d-none').html(errorMessage);
                 }
             } catch (err) {
                 console.error('Submit error:', err);
-                $('#error-message').removeClass('d-none').text('An error occurred. Please try again.');
-                $('#success-message').addClass('d-none');
+                $('#error-message').removeClass('d-none').text('An unexpected error occurred. Please try again.');
             }
         });
     });

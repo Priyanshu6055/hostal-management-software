@@ -15,7 +15,8 @@ use App\Http\Controllers\{
     RoomChangeController,
     MessController,
     StudentAccessoryController,
-    FeeController
+    FeeController,
+    FineController
 };
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -259,5 +260,12 @@ Route::get('/resident/fine', function () {
 });
 
 
+Route::get('/admin/fine', [FineController::class, 'showFineAssignmentForm'])->name('admin.fine.form');
+
 // In routes/web.php
 Route::get('/accountant/guests', [App\Http\Controllers\FeeExceptionController::class, 'showGuestManagement'])->name('accountant.guests');
+
+
+Route::get('/accountant/fines', function () {
+    return view('accountant.fines');
+})->name('accountant.fines');

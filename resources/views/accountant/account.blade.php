@@ -235,8 +235,8 @@
                         <thead>
                             <tr>
                                 <th>Accessory Name</th>
-                                <th>Returned</th>
                                 <th>Debit Amount</th>
+                                <th>Returned</th>
                                 <th>Remark</th>
                                 <th>Logged At</th>
                             </tr>

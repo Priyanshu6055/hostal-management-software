@@ -2,14 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use Exception;
 use Illuminate\Http\Request;
 use App\Models\FeeException;
 use App\Models\Guest;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
-use Exception;
 use Illuminate\Validation\ValidationException;
+
+
 
 class FeeExceptionController extends Controller
 {
@@ -28,6 +30,10 @@ class FeeExceptionController extends Controller
     }
 
 
+
+
+
+
     // public function store(Request $request)
     // {
     //     // Step 1: Validate input
@@ -39,6 +45,8 @@ class FeeExceptionController extends Controller
     //         'facility'       => 'nullable|string|max:255',
     //         'remarks'        => 'nullable|string',
     //         'approved_by'    => 'nullable|string|max:255',
+    //         'months'         => 'nullable|integer|min:0',
+    //         'days'           => 'nullable|integer|min:0',
     //         'document'       => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
     //     ]);
 
@@ -59,9 +67,8 @@ class FeeExceptionController extends Controller
     //         // Step 4: Fetch guest and check conditions
     //         $guest = Guest::findOrFail($validated['guest_id']);
 
-    //         if ($guest->status != 'waiver_approved') {
-    //             return $this->apiResponse(false, 'Waiver is not approved.', null, 400);
-    //         } elseif ($guest->fee_waiver === 0) {
+
+    //         if ($guest->fee_waiver === 0) {
     //             return $this->apiResponse(false, 'Guest did not apply for waiver.', null, 400);
     //         } elseif ($guest->status === 'paid') {
     //             return $this->apiResponse(false, 'Guest has already paid.', null, 400);
@@ -93,7 +100,15 @@ class FeeExceptionController extends Controller
     //             $data
     //         );
 
-    //         // Step 8: Update guest status (optional)
+    //         // Step 8: Update guest status, months, and days
+    //         $guest->status = 'waiver_approved';
+    //         if (isset($validated['months'])) {
+    //             $guest->months = $validated['months'];
+    //         }
+    //         if (isset($validated['days'])) {
+    //             $guest->days = $validated['days'];
+    //         }
+
     //         $guest->status = 'waiver_approved';
     //         $guest->save();
 
@@ -119,9 +134,17 @@ class FeeExceptionController extends Controller
 
 
 
+
+    /**
+     * Stores a new fee exception for a guest.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+
     public function store(Request $request)
     {
-        // Step 1: Validate input
+
         $validator = Validator::make($request->all(), [
             'guest_id'       => 'required|exists:guests,id',
             'created_by'     => 'required|integer',
@@ -133,6 +156,8 @@ class FeeExceptionController extends Controller
             'months'         => 'nullable|integer|min:0',
             'days'           => 'nullable|integer|min:0',
             'document'       => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'start_date'     => 'nullable|date', // Added validation for start_date
+            'end_date'       => 'nullable|date|after_or_equal:start_date', // Added validation for end_date
         ]);
 
         // Step 2: Return validation errors if any
@@ -152,14 +177,13 @@ class FeeExceptionController extends Controller
             // Step 4: Fetch guest and check conditions
             $guest = Guest::findOrFail($validated['guest_id']);
 
-
             if ($guest->fee_waiver === 0) {
                 return $this->apiResponse(false, 'Guest did not apply for waiver.', null, 400);
             } elseif ($guest->status === 'paid') {
                 return $this->apiResponse(false, 'Guest has already paid.', null, 400);
             }
 
-            // Step 5: Prepare data
+            // Step 5: Prepare data for FeeException
             $data = [
                 'guest_id'       => $validated['guest_id'],
                 'created_by'     => $validated['created_by'],
@@ -169,6 +193,8 @@ class FeeExceptionController extends Controller
                 'facility'       => $validated['facility'] ?? null,
                 'remarks'        => $validated['remarks'] ?? null,
                 'approved_by'    => $validated['approved_by'] ?? null,
+                'start_date'     => $validated['start_date'] ?? null, // Add start_date to data for FeeException
+                'end_date'       => $validated['end_date'] ?? null,   // Add end_date to data for FeeException
             ];
 
             // Step 6: Handle document upload
@@ -185,7 +211,7 @@ class FeeExceptionController extends Controller
                 $data
             );
 
-            // Step 8: Update guest status, months, and days
+            // Step 8: Update guest status and potentially months/days for *guest's overall stay*
             $guest->status = 'waiver_approved';
             if (isset($validated['months'])) {
                 $guest->months = $validated['months'];
@@ -194,7 +220,7 @@ class FeeExceptionController extends Controller
                 $guest->days = $validated['days'];
             }
 
-            $guest->status = 'waiver_approved';
+
             $guest->save();
 
             // Step 9: Return success response
@@ -252,7 +278,8 @@ class FeeExceptionController extends Controller
     // }
 
 
-    public function updateGuestStatusWithRemark(Request $request)
+
+    public function updateGuestStatusWithRemark(Request $request) //for accountant
     {
         // 1. Validate the incoming request
         $validator = Validator::make($request->all(), [
@@ -318,7 +345,7 @@ class FeeExceptionController extends Controller
 
 
 
-    public function showGuestManagement()
+    public function showGuestManagement() //for accountant
     {
         return view('accountant.guest_management');
     }
@@ -356,10 +383,11 @@ class FeeExceptionController extends Controller
                 'created_at'     => $feeException->created_at,
                 'updated_at'     => $feeException->updated_at,
                 'document_path'  => $feeException->document_path,
-                'document_url' => $feeException->document_path
+                'document_url'   => $feeException->document_path
                     ? Storage::url(ltrim(str_replace('storage/', '', $feeException->document_path), '/'))
                     : null,
-
+                'start_date'     => $feeException->start_date, // Added start_date
+                'end_date'       => $feeException->end_date,   // Added end_date
             ];
 
             return response()->json([
@@ -387,28 +415,28 @@ class FeeExceptionController extends Controller
     {
         try {
             // Retrieve the fee exception record associated with the guest.
-            // If there can be multiple, you might want the latest one,
-            // or one based on a specific status (e.g., 'accountant_reject').
+            // Using latest() and first() is good for getting the most recent.
             $feeException = $guest->feeException()->latest()->first();
 
             // Prepare the data to send.
             // Fields from fee_exception will be null if no exception record exists.
             $data = [
-                'hostel_fee' => $feeException->hostel_fee ?? null,
-                'caution_money' => $feeException->caution_money ?? null,
-                'total_amount' => $feeException->total_amount ?? null, // Include if calculated/stored
-                'facility' => $feeException->facility ?? null,
-                'approved_by' => $feeException->approved_by ?? null,
-                'remarks' => $feeException->remarks ?? null,
+                'hostel_fee'     => $feeException->hostel_fee ?? null,
+                'caution_money'  => $feeException->caution_money ?? null,
+                'total_amount'   => $feeException->total_amount ?? null,
+                'facility'       => $feeException->facility ?? null,
+                'approved_by'    => $feeException->approved_by ?? null,
+                'remarks'        => $feeException->remarks ?? null,
                 'account_remark' => $feeException->account_remark ?? null,
-                'document_path' => $feeException->document_path ?? null,
-                'document_url' => ($feeException && $feeException->document_path) ? Storage::url($feeException->document_path) : null,
+                'document_path'  => $feeException->document_path ?? null,
+                'document_url'   => ($feeException && $feeException->document_path) ? Storage::url($feeException->document_path) : null,
+                'start_date'     => $feeException->start_date ?? $guest->start_date ?? null, // Prefer feeException's date, then guest's
+                'end_date'       => $feeException->end_date ?? $guest->end_date ?? null,     // Prefer feeException's date, then guest's
             ];
 
-            // --- IMPORTANT CHANGE: Fetch months and days from the Guest model ---
+            // Fetch months and days from the Guest model, as they are directly on the guest record.
             $data['months'] = $guest->months ?? null;
             $data['days'] = $guest->days ?? null;
-            // --- END IMPORTANT CHANGE ---
 
             // If no fee exception details are found, we still return the guest's months/days
             // and indicate that no fee exception record exists.
@@ -418,9 +446,6 @@ class FeeExceptionController extends Controller
 
             if (!$feeException) {
                 $message = 'No fee exception record found for this guest. Default values are shown.';
-                // You might change the status code to 200 if you're still returning partial data,
-                // or keep it 404 if "no fee exception" means the primary data is missing.
-                // For editing, 200 with a message is often more user-friendly to allow entry.
             }
 
             return $this->apiResponse(

@@ -21,7 +21,8 @@ class Subscription extends Model
         'start_date',
         'end_date',
         'status',
-        'remarks'
+        'remarks',
+        'created_by'
     ];
 
     public function resident()
@@ -44,5 +45,8 @@ class Subscription extends Model
         return $this->belongsTo(FeeHead::class, 'fee_head_id');
     }
 
-
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }
