@@ -474,7 +474,7 @@ class GuestController extends Controller
             // Only fetch guests whose status is NOT 'paid' or 'rejected'
             $guests = Guest::with([
                 'accessories.accessoryHead:id,name'
-            ])->whereNotIn('status', ['paid', 'approved', 'rejected', 'waiver_approved'])
+            ])->whereNotIn('status', ['paid', 'approved', 'rejected', 'waiver_approved','waiver_rejected'])
                 ->with('feeException')->get();
 
             return response()->json([
@@ -553,7 +553,7 @@ class GuestController extends Controller
     public function getApprovedOrRejectedGuests()
     {
         try {
-            $guests = Guest::whereIn('status', ['approved', 'rejected', 'pending', 'waiver_approved'])->get();
+            $guests = Guest::whereIn('status', ['approved', 'rejected', 'pending', 'waiver_approved', 'waiver_rejected'])->get();
 
             return response()->json([
                 'success' => true,

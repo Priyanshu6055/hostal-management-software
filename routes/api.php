@@ -244,6 +244,7 @@ Route::get('/admin/check-rooms', [AdminController::class, 'checkAvailableRooms']
 Route::post('/admin/approved-guest', [AdminController::class, 'adminApproved']); // Send payment request
 Route::post('/admin/approved-waiver', [FeeExceptionController::class, 'adminWaiverApproved']); // Send payment request
 Route::post('/admin/modify-waiver/payments', [FeeExceptionController::class, 'store']); // Send payment request
+Route::post('/admin/reject-waiver', [FeeExceptionController::class, 'waiverRejected']); // Send payment request
 
 Route::post('/guest-payments', [PaymentController::class, 'guestPayment']); // Guest makes payment
 Route::post('/admin/assign-bed', [ResidentController::class, 'assignBed']); // Assign bed to resident

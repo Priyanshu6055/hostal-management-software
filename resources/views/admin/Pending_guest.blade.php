@@ -244,7 +244,7 @@
     function showCustomMessageBox(message, type = 'info', targetElementId = 'mainResponseMessage') {
         const messageContainer = document.getElementById(targetElementId);
         if (messageContainer) {
-            messageContainer.innerHTML = ""; // Clear previous messages
+            messageContainer.innerHTML = "";
             const alertDiv = document.createElement('div');
             alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
             alertDiv.innerHTML = `
@@ -252,12 +252,11 @@
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             `;
             messageContainer.appendChild(alertDiv);
-            setTimeout(() => alertDiv.remove(), 3000); // Remove after 3 seconds
+            setTimeout(() => alertDiv.remove(), 3000);
         } else {
             console.warn(`Message container #${targetElementId} not found.`);
         }
     }
-
 
     function showModalMessage(message, type = 'info', targetElementId = 'adjustPaymentMessage') {
         const messageContainer = document.getElementById(targetElementId);
@@ -293,7 +292,7 @@
             })
             .then(response => {
                 const guests = response.data;
-                guestList.innerHTML = ""; // Clear loading message
+                guestList.innerHTML = "";
 
                 if (!response.success || !Array.isArray(guests) || guests.length === 0) {
                     guestList.innerHTML = `<tr><td colspan="17" class="text-center">No pending guests found.</td></tr>`;
@@ -317,15 +316,15 @@
 
                     let actionButtons = '';
                     if (guest.status === 'pending') {
-                        if (guest.fee_waiver) { // If fee waiver is 'yes' (1)
+                        if (guest.fee_waiver) {
                             actionButtons = `
                                 <button class="btn btn-primary btn-sm mb-1" onclick="showProcessGuestModal(${guest.id}, true)">Process</button>
-                                <button class="btn btn-danger btn-sm mb-1" onclick="denyGuest(${guest.id})">Reject Application</button>
+                                <button class="btn btn-danger btn-sm mb-1" onclick="rejectApplication(${guest.id})">Reject Application</button>
                             `;
-                        } else { // If fee waiver is 'no' (0)
+                        } else {
                             actionButtons = `
                                 <button class="btn btn-success btn-sm mb-1" onclick="approveGuest(${guest.id})">Approve</button>
-                                <button class="btn btn-danger btn-sm mb-1" onclick="denyGuest(${guest.id})">Reject Application</button>
+                                <button class="btn btn-danger btn-sm mb-1" onclick="rejectApplication(${guest.id})">Reject Application</button>
                             `;
                         }
                     } else if (guest.status === 'accountant_reject') {
@@ -366,7 +365,6 @@
             });
     }
 
-
     window.approveGuest = function(guestId) {
         fetch("{{ url('/api/admin/approved-guest') }}", {
                 method: "POST",
@@ -383,7 +381,7 @@
             .then(response => {
                 if (response.success) {
                     showCustomMessageBox(response.message || "Guest approved successfully.", 'success');
-                    if (confirmProcessModal) { // Check if modal instance exists
+                    if (confirmProcessModal) {
                         confirmProcessModal.hide();
                     }
                     fetchPendingGuests();
@@ -397,12 +395,12 @@
             });
     };
 
-    window.denyGuest = function(guestId) {
-        const remark = prompt("Please enter a remark for rejecting this guest:");
-        if (remark === null) { // User clicked Cancel
+    window.rejectApplication = function(guestId) {
+        const remark = prompt("Please enter a remark for rejecting this application:");
+        if (remark === null) {
             return;
         }
-        
+
         fetch("{{ url('/api/payment/reject') }}", {
                 method: "POST",
                 headers: {
@@ -412,24 +410,60 @@
                 },
                 body: JSON.stringify({
                     guest_id: guestId,
-                    admin_remarks: remark // Include the remark here
+                    admin_remarks: remark
                 })
             })
             .then(response => response.json())
             .then(response => {
                 if (response.success) {
-                    showCustomMessageBox(response.message || "Guest rejected successfully.", 'success');
-                    if (confirmProcessModal) { // Check if modal instance exists
+                    showCustomMessageBox(response.message || "Guest application rejected successfully.", 'success');
+                    if (confirmProcessModal) {
                         confirmProcessModal.hide();
                     }
                     fetchPendingGuests();
                 } else {
-                    showCustomMessageBox(response.message || "Rejection failed.", 'danger');
+                    showCustomMessageBox(response.message || "Application rejection failed.", 'danger');
                 }
             })
             .catch(error => {
-                console.error('Error denying guest:', error);
-                showCustomMessageBox('An error occurred during rejection.', 'danger');
+                console.error('Error rejecting guest application:', error);
+                showCustomMessageBox('An error occurred during application rejection.', 'danger');
+            });
+    };
+
+    window.rejectWaiver = function(guestId) {
+        const remark = prompt("Please enter a remark for rejecting this fee waiver:");
+        if (remark === null) {
+            return;
+        }
+
+        fetch("{{ url('/api/admin/reject-waiver') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": getCsrfToken(),
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify({
+                    guest_id: guestId,
+                    admin_remarks: remark
+                })
+            })
+            .then(response => response.json())
+            .then(response => {
+                if (response.success) {
+                    showCustomMessageBox(response.message || "Fee waiver rejected successfully.", 'success');
+                    if (confirmProcessModal) {
+                        confirmProcessModal.hide();
+                    }
+                    fetchPendingGuests();
+                } else {
+                    showCustomMessageBox(response.message || "Fee waiver rejection failed.", 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error rejecting fee waiver:', error);
+                showCustomMessageBox('An error occurred during fee waiver rejection.', 'danger');
             });
     };
 
@@ -587,6 +621,7 @@
                             showCustomMessageBox(result.message || 'Review update failed.', 'danger');
                         }
                     }
+
                 } catch (error) {
                     console.error('Error submitting reviewRejectForm:', error);
                     const errorBox = document.getElementById('reviewAmountErrors');
@@ -776,35 +811,32 @@
             editAmountModal.hide();
         };
 
-        // This function now correctly shows options based on fee_waiver status
         window.showProcessGuestModal = function(guestId, hasFeeWaiver) {
             const processGuestButtonsContainer = document.getElementById('processGuestButtons');
             if (processGuestButtonsContainer) {
-                processGuestButtonsContainer.innerHTML = ''; // Clear previous buttons
+                processGuestButtonsContainer.innerHTML = '';
 
                 if (hasFeeWaiver) {
                     processGuestButtonsContainer.innerHTML += `
                         <button class="btn btn-primary btn-lg mb-1" onclick="approveFeeWaiver(${guestId})">Approve Fee Waiver</button>
+                        <button class="btn btn-danger btn-lg mb-1" onclick="rejectWaiver(${guestId})">Reject Waiver / Procced Without Waiver</button>
                     `;
                 } else {
                     processGuestButtonsContainer.innerHTML += `
                         <button class="btn btn-success btn-lg mb-1" onclick="approveGuest(${guestId})">Approve Guest</button>
+                        <button class="btn btn-danger btn-lg mb-1" onclick="rejectApplication(${guestId})">Reject Application</button>
                     `;
                 }
-                processGuestButtonsContainer.innerHTML += `
-                    <button class="btn btn-danger btn-lg mb-1" onclick="denyGuest(${guestId})">Reject Waiver</button>
-                `;
-                
+
             } else {
                 console.error("Container for process guest buttons not found.");
-                alert("Could not open processing options. Please check console for errors.");
+                showCustomMessageBox("Could not open processing options. Please check console for errors.", 'danger');
                 return;
             }
             confirmProcessModal.show();
         };
     });
 </script>
-
 
 
 
