@@ -16,7 +16,8 @@ use App\Http\Controllers\{
     MessController,
     StudentAccessoryController,
     FeeController,
-    FineController
+    FineController,
+    PaymentController
 };
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -269,3 +270,11 @@ Route::get('/accountant/guests', [App\Http\Controllers\FeeExceptionController::c
 Route::get('/accountant/fines', function () {
     return view('accountant.fines');
 })->name('accountant.fines');
+
+
+Route::get('/accountant/resident/accessory-pay', [PaymentController::class, 'showAccessoryPaymentForm'])->name('accountant.resident.accessory-pay');
+
+
+Route::get('/accountant/resident/accessory-pay', function () {
+    return view('accountant.accessory_pay');
+})->name('accountant.resident.accessory-pay');

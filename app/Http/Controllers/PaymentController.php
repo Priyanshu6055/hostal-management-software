@@ -582,6 +582,75 @@ class PaymentController extends Controller
 
 
 
+    // public function getAccessoryPendingPayments($resident_id)
+    // {
+    //     try {
+    //         $validator = Validator::make(['resident_id' => $resident_id], [
+    //             'resident_id' => 'required|exists:residents,id',
+    //         ]);
+
+    //         if ($validator->fails()) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Validation failed',
+    //                 'data' => null,
+    //                 'errors' => $validator->errors()
+    //             ], 422);
+    //         }
+
+    //         $latestPaymentIds = Payment::where('resident_id', $resident_id)
+    //             ->whereNotNull('student_accessory_id')
+    //             ->select(DB::raw('MAX(id) as id'))
+    //             ->groupBy('student_accessory_id')
+    //             ->pluck('id');
+
+    //         $latestPayments = Payment::with([
+    //             'resident.user',
+    //             'resident.guest',
+    //             'studentAccessory.accessory'
+    //         ])
+    //             ->whereIn('id', $latestPaymentIds)
+    //             ->where('remaining_amount', '>', 0)
+    //             ->get();
+
+    //         if ($latestPayments->isEmpty()) {
+    //             return response()->json([
+    //                 'success' => true,
+    //                 'message' => 'No pending payments found.',
+    //                 'data' => [],
+    //                 'errors' => null
+    //             ]);
+    //         }
+
+    //         $formattedPayments = $latestPayments->map(function ($payment) {
+    //             return [
+    //                 'payment_id' => $payment->id,
+    //                 'amount' => $payment->amount,
+    //                 'remaining_amount' => $payment->remaining_amount,
+    //                 'student_accessory_id' => $payment->student_accessory_id,
+    //                 'accessory_name' => $payment->studentAccessory->accessory->name ?? 'N/A',
+    //                 'resident_name' => $payment->resident->user->name ?? 'N/A',
+    //                 'scholar_no' => $payment->resident->guest->scholar_no ?? 'N/A',
+    //             ];
+    //         });
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Pending accessory payments retrieved successfully.',
+    //             'data' => $formattedPayments,
+    //             'errors' => null
+    //         ]);
+    //     } catch (Exception $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'An unexpected error occurred.',
+    //             'data' => null,
+    //             'errors' => ['exception' => [$e->getMessage()]]
+    //         ], 500);
+    //     }
+    // } not getting accessory name
+
+
     public function getAccessoryPendingPayments($resident_id)
     {
         try {
@@ -598,22 +667,36 @@ class PaymentController extends Controller
                 ], 422);
             }
 
-            $latestPaymentIds = Payment::where('resident_id', $resident_id)
+            // Subquery to get the latest payment ID for each student_accessory_id
+            $latestPaymentSubquery = Payment::select(DB::raw('MAX(id) as id'))
+                ->where('resident_id', $resident_id)
                 ->whereNotNull('student_accessory_id')
-                ->select(DB::raw('MAX(id) as id'))
-                ->groupBy('student_accessory_id')
-                ->pluck('id');
+                ->groupBy('student_accessory_id');
 
-            $latestPayments = Payment::with([
-                'resident.user',
-                'resident.guest',
-                'studentAccessory.accessory'
-            ])
-                ->whereIn('id', $latestPaymentIds)
-                ->where('remaining_amount', '>', 0)
+            $formattedPayments = DB::table('payments as p')
+                ->joinSub($latestPaymentSubquery, 'latest_payments', function ($join) {
+                    $join->on('p.id', '=', 'latest_payments.id');
+                })
+                ->join('student_accessory as sa', 'p.student_accessory_id', '=', 'sa.id')
+                ->join('accessory as a', 'sa.accessory_head_id', '=', 'a.id')
+                ->join('accessory_heads as ah', 'a.accessory_head_id', '=', 'ah.id')
+                ->join('residents as r', 'p.resident_id', '=', 'r.id')
+                ->leftJoin('users as u', 'r.user_id', '=', 'u.id')
+                ->leftJoin('guests as g', 'r.guest_id', '=', 'g.id')
+                ->where('p.remaining_amount', '>', 0)
+                ->select(
+                    'p.id as payment_id',
+                    'p.amount',
+                    'p.remaining_amount',
+                    'p.student_accessory_id',
+                    'ah.name as accessory_name',
+                    DB::raw('COALESCE(u.name, "N/A") as resident_name'),
+                    DB::raw('COALESCE(g.scholar_no, "N/A") as scholar_no')
+                )
                 ->get();
 
-            if ($latestPayments->isEmpty()) {
+
+            if ($formattedPayments->isEmpty()) {
                 return response()->json([
                     'success' => true,
                     'message' => 'No pending payments found.',
@@ -621,18 +704,6 @@ class PaymentController extends Controller
                     'errors' => null
                 ]);
             }
-
-            $formattedPayments = $latestPayments->map(function ($payment) {
-                return [
-                    'payment_id' => $payment->id,
-                    'amount' => $payment->amount,
-                    'remaining_amount' => $payment->remaining_amount,
-                    'student_accessory_id' => $payment->student_accessory_id,
-                    'accessory_name' => $payment->studentAccessory->accessory->name ?? 'N/A',
-                    'resident_name' => $payment->resident->user->name ?? 'N/A',
-                    'scholar_no' => $payment->resident->guest->scholar_no ?? 'N/A',
-                ];
-            });
 
             return response()->json([
                 'success' => true,
@@ -794,16 +865,29 @@ class PaymentController extends Controller
         }
 
         try {
-            $payments = Payment::with([
-                'guest',
-                'resident',
-                'fees',
-                'subscription',
-                'studentAccessory',
-                'createdBy'
-            ])
-                ->where('resident_id', $id)
-                ->orderBy('created_at', 'desc')
+            $payments = DB::table('payments')
+                ->select(
+                    'payments.transaction_id',
+                    'payments.total_amount',
+                    'payments.amount',
+                    'payments.remaining_amount',
+                    'payments.payment_method',
+                    'payments.payment_status',
+                    'payments.due_date',
+                    'payments.remarks',
+                    'payments.created_at',
+                    'fees.name as fee_head_name',
+                    'accessory_heads.name as accessory_name',
+                    'subscriptions.subscription_type as subscription_name'
+                )
+                ->leftJoin('fees', 'payments.fee_head_id', '=', 'fees.id')
+                ->leftJoin('subscriptions', 'payments.subscription_id', '=', 'subscriptions.id')
+                // Joining sequence: payments -> student_accessory -> accessory -> accessory_heads
+                ->leftJoin('student_accessory', 'payments.student_accessory_id', '=', 'student_accessory.id')
+                ->leftJoin('accessory', 'student_accessory.accessory_head_id', '=', 'accessory.id')
+                ->leftJoin('accessory_heads', 'accessory.accessory_head_id', '=', 'accessory_heads.id')
+                ->where('payments.resident_id', $id)
+                ->orderBy('payments.created_at', 'desc')
                 ->get();
 
             if ($payments->isEmpty()) {
@@ -815,28 +899,15 @@ class PaymentController extends Controller
                 ], 404);
             }
 
-            $formatted = $payments->map(function ($payment) {
-                return [
-                    'transaction_id'    => $payment->transaction_id,
-                    'total_amount'      => $payment->total_amount,
-                    'amount'            => $payment->amount,
-                    'remaining_amount'  => $payment->remaining_amount,
-                    'payment_method'    => $payment->payment_method,
-                    'payment_status'    => $payment->payment_status,
-                    'due_date'          => $payment->due_date,
-                    'fee_head_name'     => optional($payment->fees)->name,
-                    'accessory_name'    => optional($payment->studentAccessory)->name,
-                    'subscription_name' => optional($payment->subscription)->name,
-                ];
-            });
-
             return response()->json([
                 'success' => true,
                 'message' => 'Payments retrieved successfully.',
-                'data'    => $formatted,
+                'data'    => $payments,
                 'errors'  => null
             ], 200);
         } catch (\Exception $e) {
+            \Log::error("Error fetching payments with joins: " . $e->getMessage(), ['exception' => $e]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while fetching payments.',
@@ -845,7 +916,6 @@ class PaymentController extends Controller
             ], 500);
         }
     }
-
 
 
     public function getAllPaymentsByResidentId($residentId)
@@ -939,5 +1009,14 @@ class PaymentController extends Controller
                 'errors'  => ['exception' => $e->getMessage()]
             ], 500);
         }
+    }
+
+
+    public function showAccessoryPaymentForm(Request $request)
+    {
+        $residentId = $request->query('resident_id');
+        $studentAccessoryId = $request->query('student_accessory_id');
+
+        return view('accountant.accessory_pay', compact('residentId', 'studentAccessoryId'));
     }
 }

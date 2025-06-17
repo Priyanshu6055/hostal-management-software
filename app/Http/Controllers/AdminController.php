@@ -154,7 +154,7 @@ class AdminController extends Controller
     // } without admin remakrs
 
 
-     public function rejectPaymentRequest(Request $request)
+    public function rejectPaymentRequest(Request $request)
     {
         try {
             $validatedData = $request->validate([
@@ -165,6 +165,45 @@ class AdminController extends Controller
             $guest = Guest::findOrFail($validatedData['guest_id']);
 
             if ($guest->status === 'rejected') {
+                return $this->apiResponse(false, 'Payment request already rejected.', null, 400);
+            }
+
+            $guest->status = 'rejected';
+            $guest->admin_remarks = $validatedData['admin_remarks'] ?? null; // Store the remarks
+            $guest->save();
+
+            return $this->apiResponse(true, 'Guest payment request rejected successfully.', [
+                'guest' => [
+                    'id' => $guest->id,
+                    'status' => $guest->status,
+                    'admin_remarks' => $guest->admin_remarks, // Include in response
+                ]
+            ]);
+        } catch (ValidationException $e) {
+            return $this->apiResponse(false, 'Validation failed.', null, 422, $e->errors());
+        } catch (Exception $e) {
+            // Log the exception for debugging purposes
+            \Log::error('Error rejecting guest payment request: ' . $e->getMessage(), [
+                'guest_id' => $request->input('guest_id'),
+                'exception' => $e
+            ]);
+            return $this->apiResponse(false, 'An error occurred while rejecting guest payment request.', null, 500, ['error' => $e->getMessage()]);
+        }
+    }
+
+
+    
+    public function waiverRejected(Request $request)
+    {
+        try {
+            $validatedData = $request->validate([
+                'guest_id' => 'required|exists:guests,id',
+                'admin_remarks' => 'nullable|string|max:1000', // Make it nullable if not always required, otherwise 'required'
+            ]);
+
+            $guest = Guest::findOrFail($validatedData['guest_id']);
+
+            if ($guest->status === 'waiver_rejected') {
                 return $this->apiResponse(false, 'Payment request already rejected.', null, 400);
             }
 

@@ -31,8 +31,8 @@ class ResidentController extends Controller
             ], 500);
         }
     }
-    
- public function getResidentById($id)
+
+    public function getResidentById($id)
     {
         try {
             if (!is_numeric($id)) {

@@ -38,7 +38,7 @@ class StudentAccessoryController extends Controller
             ], 404);
         }
     }
-    
+
 
     public function addAccessory(Request $request, $resident_id)
     {
@@ -196,90 +196,89 @@ class StudentAccessoryController extends Controller
         }
     }
 
-public function adminSendAccessoryToResident(Request $request)
-{
-    $request->validate([
-        'resident_id' => 'required|exists:residents,id',
-        'accessory_head_id' => 'required|exists:accessory_heads,id', // ✅ validate from accessory_heads table
-        'duration' => 'required|in:1 Month,3 Months,6 Months,1 Year',
-        'created_by' => 'required|exists:users,id',
-        'remarks' => 'nullable|string',
-    ]);
+    public function adminSendAccessoryToResident(Request $request)
+    {
+        $request->validate([
+            'resident_id' => 'required|exists:residents,id',
+            'accessory_head_id' => 'required|exists:accessory_heads,id', // ✅ validate from accessory_heads table
+            'duration' => 'required|in:1 Month,3 Months,6 Months,1 Year',
+            'created_by' => 'required|exists:users,id',
+            'remarks' => 'nullable|string',
+        ]);
 
-    DB::beginTransaction();
+        DB::beginTransaction();
 
-    try {
-        $resident = Resident::findOrFail($request->resident_id);
+        try {
+            $resident = Resident::findOrFail($request->resident_id);
 
-        // ✅ Find active accessory using accessory_head_id
-        $accessory = Accessory::where('accessory_head_id', $request->accessory_head_id)
-            ->where('is_active', true)
-            ->first();
+            // ✅ Find active accessory using accessory_head_id
+            $accessory = Accessory::where('accessory_head_id', $request->accessory_head_id)
+                ->where('is_active', true)
+                ->first();
 
-        if (!$accessory) {
+            if (!$accessory) {
+                return response()->json([
+                    'error' => 'Active accessory not found for the given accessory_head_id'
+                ], 404);
+            }
+
+            $fromDate = now();
+
+            $months = match ($request->duration) {
+                '1 Month' => 1,
+                '3 Months' => 3,
+                '6 Months' => 6,
+                '1 Year' => 12,
+            };
+
+            $toDate = $fromDate->copy()->addMonths($months);
+            $dueDate = now()->addDays(30);
+            $price = $accessory->price;
+            $totalAmount = $price * $months;
+
+            // ✅ 1. Store accessory_head_id in student_accessory
+            $studentAccessory = StudentAccessory::create([
+                'resident_id' => $resident->id,
+                'accessory_head_id' => $accessory->accessory_head_id, // ✅ changed here
+                'price' => $price,
+                'total_amount' => $totalAmount,
+                'from_date' => $fromDate,
+                'to_date' => $toDate,
+                'due_date' => $dueDate,
+            ]);
+
+            // ✅ 2. Create Payment with accessory_head_id
+            Payment::create([
+                'resident_id' => $resident->id,
+                'accessory_head_id' => $accessory->accessory_head_id, // ✅ changed here
+                'student_accessory_id' => $studentAccessory->id,
+                'total_amount' => $totalAmount,
+                'amount' => 0,
+                'remaining_amount' => $totalAmount,
+                'transaction_id' => null,
+                'payment_method' => 'Null',
+                'payment_status' => 'Pending',
+                'created_by' => $request->created_by,
+                'due_date' => $dueDate,
+                'remarks' => $request->remarks,
+            ]);
+
+            DB::commit();
+
             return response()->json([
-                'error' => 'Active accessory not found for the given accessory_head_id'
-            ], 404);
+                'message' => 'Accessory assigned and payment created successfully.',
+                'student_accessory_id' => $studentAccessory->id,
+                'payment_status' => 'Pending',
+                'total_amount' => $totalAmount,
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'error' => 'Failed to assign accessory or create payment.',
+                'details' => $e->getMessage(),
+            ], 500);
         }
-
-        $fromDate = now();
-
-        $months = match ($request->duration) {
-            '1 Month' => 1,
-            '3 Months' => 3,
-            '6 Months' => 6,
-            '1 Year' => 12,
-        };
-
-        $toDate = $fromDate->copy()->addMonths($months);
-        $dueDate = now()->addDays(30);
-        $price = $accessory->price;
-        $totalAmount = $price * $months;
-
-        // ✅ 1. Store accessory_head_id in student_accessory
-        $studentAccessory = StudentAccessory::create([
-            'resident_id' => $resident->id,
-            'accessory_head_id' => $accessory->accessory_head_id, // ✅ changed here
-            'price' => $price,
-            'total_amount' => $totalAmount,
-            'from_date' => $fromDate,
-            'to_date' => $toDate,
-            'due_date' => $dueDate,
-        ]);
-
-        // ✅ 2. Create Payment with accessory_head_id
-        Payment::create([
-            'resident_id' => $resident->id,
-            'accessory_head_id' => $accessory->accessory_head_id, // ✅ changed here
-            'student_accessory_id' => $studentAccessory->id,
-            'total_amount' => $totalAmount,
-            'amount' => 0,
-            'remaining_amount' => $totalAmount,
-            'transaction_id' => null,
-            'payment_method' => 'Null',
-            'payment_status' => 'Pending',
-            'created_by' => $request->created_by,
-            'due_date' => $dueDate,
-            'remarks' => $request->remarks,
-        ]);
-
-        DB::commit();
-
-        return response()->json([
-            'message' => 'Accessory assigned and payment created successfully.',
-            'student_accessory_id' => $studentAccessory->id,
-            'payment_status' => 'Pending',
-            'total_amount' => $totalAmount,
-        ], 201);
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return response()->json([
-            'error' => 'Failed to assign accessory or create payment.',
-            'details' => $e->getMessage(),
-        ], 500);
     }
-}
 
 
 
@@ -302,5 +301,4 @@ public function adminSendAccessoryToResident(Request $request)
             ], 404);
         }
     }
-
 }

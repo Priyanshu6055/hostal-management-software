@@ -1,8 +1,10 @@
 <?php
-
 use Carbon\Carbon;
+use App\Models\User;
+use App\Models\Payment;
 use App\Services\SmsService;
 use Illuminate\Http\Request;
+use App\Services\MailService;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UniversityController;
@@ -31,15 +33,12 @@ use App\Http\Controllers\MessController;
 use App\Http\Controllers\FeeHeadController;
 use App\Http\Controllers\AccessoryHeadController;
 use Illuminate\Support\Facades\Auth;
-use App\Models\User;
-use App\Models\Payment;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\FineController;
 use App\Http\Controllers\RoomChangeMessageController;
 use App\Http\Controllers\FeeExceptionController;
 use App\Notifications\CustomAppNotification;
 use Illuminate\Support\Facades\Validator;
-use App\Services\MailService;
 use App\Http\Controllers\NotificationController;
 
 
@@ -346,9 +345,7 @@ Route::get('/guests/paid', [GuestController::class, 'getPaidGuests']);
 
 
 
-
 //In app notifications
-
 Route::post('/send-notification', function (Request $request) {
     $request->validate([
         'user_id' => 'required|exists:users,id',
@@ -364,7 +361,6 @@ Route::post('/send-notification', function (Request $request) {
 
 
 //AWS SMS Service for test
-
 Route::post('/send-sms', function (Request $request) {
     $validator = Validator::make($request->all(), [
         'phone' => 'required|string',
@@ -391,7 +387,6 @@ Route::post('/send-sms', function (Request $request) {
 
 
 //AWS Mail Service for test
-
 Route::post('/send-mail', function (Request $request) {
     $validator = Validator::make($request->all(), [
         'email' => 'required|email',
