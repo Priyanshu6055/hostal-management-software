@@ -20,6 +20,8 @@
             <tr>
                 <th>S.No.</th>
                 <th>Building Name</th>
+                <th>Floors</th>
+                <th>Building Code</th>
                 <th>Status</th>
                 <th>Actions</th>
             </tr>
@@ -46,189 +48,119 @@
         </div>
     </div>
 </div>
+<script type="text/javascript">
+$(document).ready(function(){
+    $.ajax({
+        url: '/api/admin/buildings', // your API endpoint
+        type: 'GET',
+        headers: {
+            'token': localStorage.getItem('token'),
+            'Auth-ID': localStorage.getItem('auth-id')
+        },
+        success: function (response) {
+            if (response.success && Array.isArray(response.data)) {
+                let rows = '';
+                response.data.forEach(function (building, index) {
+                    rows += `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${building.name}</td>
+                            <td>${building.floors}</td>
+                            <td>${building.building_code}</td>  
+                            <td>${building.status}</td>
+                            <td>                                
+                            <a href="/admin/buildings/edit/${building.id}" class="btn btn-sm btn-primary edit-btn" data-id="${building.id}">Edit</a>
+                            <a href="javascript:void(0);" class="btn btn-sm btn-danger delete-btn" data-id="${building.id}">Delete</a>
+                            </td>
+                        </tr>
+                    `;
+                });
+                $('#buildingList tbody').html(rows);
+            } else {
+                $('#buildingList tbody').html('<tr><td colspan="4">No data found</td></tr>');
+            }
+            },
+            error: function (xhr) {
+                console.error(xhr);
+                $('#buildingList tbody').html('<tr><td colspan="4">Error loading data</td></tr>');
+            }
+    });
+});
 
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        let deleteConfirmationModal;
-        let buildingToDeleteId = null;
 
-        deleteConfirmationModal = new bootstrap.Modal(document.getElementById('deleteConfirmationModal'));
-        fetchBuildings();
-
-        document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
-            if (buildingToDeleteId !== null) {
-                performDelete(buildingToDeleteId);
-                deleteConfirmationModal.hide();
+function showAlert(type, message) {
+    let alertBox = type === 'success' ? $('#successAlert') : $('#errorAlert');
+    alertBox.text(message).removeClass('d-none');
+    setTimeout(() => {
+        alertBox.addClass('d-none');
+    }, 4000);
+}
+$(document).on('click', '.delete-btn', function () {
+    let buildingId = $(this).data('id'); // Get the ID from button
+    console.log("Deleting building with ID:", buildingId);
+    $('#deleteConfirmationModal').modal('show');
+    $('#confirmDeleteBtn').off('click').on('click', function () {
+        $.ajax({
+            url: `/api/admin/buildings/${buildingId}`,              
+            type: 'DELETE',
+            headers: {
+                'token': localStorage.getItem('token'),
+                'auth-id': localStorage.getItem('auth-id'),
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')        
+            },
+            success: function (response) {
+                if (response.success) {
+                    showAlert("success", response.message || "Building deleted successfully!");
+                    $('#deleteConfirmationModal').modal('hide');
+                    // Refresh the building list
+                    $.ajax({
+                        url: '/api/admin/buildings',
+                        type: 'GET',
+                        headers: {
+                            'token': localStorage.getItem('token'),         
+                            'auth-id': localStorage.getItem('auth-id')
+                        },
+                        success: function (response) {
+                            if (response.success && Array.isArray(response.data)) {
+                                let rows = '';
+                                response.data.forEach(function (building, index) {
+                                    rows += `
+                                        <tr>        
+                                            <td>${index + 1}</td>
+                                            <td>${building.name}</td>
+                                            <td>${building.floors}</td>
+                                            <td>${building.building_code}</td>  
+                                            <td>${building.status}</td>
+                                            <td>                                
+                                            <a href="/admin/buildings/edit/${building.id}" class="btn btn-sm btn-primary edit-btn" data-id="${building.id}">Edit</a>
+                                            <a href="javascript:void(0);" class="btn btn-sm btn-danger delete-btn" data-id="${building.id}">Delete</a>
+                                            </td>
+                                        </tr>
+                                    `;
+                                });
+                                $('#buildingList tbody').html(rows);
+                            } else {
+                                $('#buildingList tbody').html('<tr><td colspan="6">No data found</td></tr>');
+                            }
+                        },
+                        error: function (xhr) {
+                            console.error(xhr);
+                            $('#buildingList tbody').html('<tr><td colspan="6">Error loading data</td></tr>');
+                        }
+                    });
+                } else {
+                    showAlert("danger", response.message || "Failed to delete building.");
+                    $('#deleteConfirmationModal').modal('hide');
+                }
+            },
+            error: function (xhr) {
+                console.error(xhr);
+                showAlert("danger", "An error occurred while deleting the building.");
+                $('#deleteConfirmationModal').modal('hide');
             }
         });
-
-        function fetchBuildings(message = null, type = 'success') {
-            fetch('/api/buildings')
-                .then(response => {
-                    if (!response.ok) {
-                        return response.text().then(text => {
-                            throw new Error(`HTTP error! Status: ${response.status}, Message: ${text}`);
-                        });
-                    }
-                    return response.json();
-                })
-                .then(apiResponse => {
-                    let buildingList = document.getElementById("buildingList").querySelector("tbody");
-                    buildingList.innerHTML = "";
-                    showError(''); // Clear any previous error messages
-
-                    if (apiResponse.success && apiResponse.data && apiResponse.data.length > 0) {
-                        apiResponse.data.forEach((building, index) => {
-                            buildingList.innerHTML += generateRow(building, index + 1);
-                        });
-                    } else {
-                        buildingList.innerHTML = `<tr><td colspan="4" class="text-center">No buildings found.</td></tr>`;
-                    }
-
-                    // Display success/info message after fetching, if provided
-                    if (message) {
-                        if (type === 'success') {
-                            showMessage(message);
-                        } else {
-                            showError(message);
-                        }
-                    }
-                })
-                .catch(error => {
-                    showError(`Failed to load buildings: ${error.message}`);
-                    console.error('Error fetching buildings:', error);
-                });
-        }
-
-        function generateRow(building, serialNumber) {
-            let badgeClass = building.status === 'active' ? 'bg-success' : 'bg-danger';
-            let statusLabel = building.status.charAt(0).toUpperCase() + building.status.slice(1);
-            return `
-            <tr data-id="${building.id}">
-                <td>${serialNumber}</td>
-                <td class="name">${building.name}</td>
-                <td class="status"><span class="badge ${badgeClass}">${statusLabel}</span></td>
-                <td class="actions">
-                    <button class="btn btn-sm btn-warning me-1" onclick="enableEdit(this)">Update</button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteBuilding(${building.id})">Delete</button>
-                </td>
-            </tr>
-        `;
-        }
-
-        window.enableEdit = function(button) {
-            const row = button.closest('tr');
-            const name = row.querySelector('.name').innerText;
-            const statusText = row.querySelector('.status span').innerText.toLowerCase();
-
-            row.querySelector('.name').innerHTML = `<input type="text" class="form-control form-control-sm" value="${name}">`;
-            row.querySelector('.status').innerHTML = `
-            <select class="form-select form-select-sm">
-                <option value="active" ${statusText === 'active' ? 'selected' : ''}>Active</option>
-                <option value="inactive" ${statusText === 'inactive' ? 'selected' : ''}>Inactive</option>
-            </select>`;
-
-            row.querySelector('.actions').innerHTML = `
-            <button class="btn btn-sm btn-success me-1" onclick="saveUpdate(this)">Save</button>
-            <button class="btn btn-sm btn-secondary" onclick="cancelEdit()">Cancel</button>`;
-        }
-
-        window.cancelEdit = function() {
-            fetchBuildings();
-        }
-
-        window.saveUpdate = function(button) {
-            const row = button.closest('tr');
-            const id = row.dataset.id;
-            const name = row.querySelector('.name input').value;
-            const status = row.querySelector('.status select').value;
-
-            fetch(`/api/buildings/${id}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        name,
-                        status
-                    })
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        return response.text().then(text => {
-                            throw new Error(`Update failed! Status: ${response.status}, Message: ${text}`);
-                        });
-                    }
-                    return response.json();
-                })
-                .then(() => fetchBuildings('Building updated successfully.')) // Pass success message
-                .catch(error => {
-                    showError(`Failed to update building: ${error.message}`);
-                    console.error('Error updating:', error);
-                });
-        }
-
-        window.deleteBuilding = function(id) {
-            buildingToDeleteId = id;
-            deleteConfirmationModal.show();
-        }
-
-        function performDelete(id) {
-            fetch(`/api/buildings/${id}`, {
-                    method: "DELETE",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-CSRF-TOKEN": '{{ csrf_token() }}'
-                    }
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        return response.text().then(text => {
-                            throw new Error(`Deletion failed! Status: ${response.status}, Message: ${text}`);
-                        });
-                    }
-                    return response.json();
-                })
-                .then(() => fetchBuildings('Building deleted successfully.')) // Pass success message
-                .catch(error => {
-                    showError(`Failed to delete building: ${error.message}`);
-                    console.error('Error deleting:', error);
-                });
-        }
-
-        function showError(message) {
-            const errorAlert = document.getElementById("errorAlert");
-            const successAlert = document.getElementById("successAlert"); // Hide success if error comes
-
-            successAlert.classList.add("d-none"); // Ensure success alert is hidden
-            errorAlert.textContent = message;
-            if (message) {
-                errorAlert.classList.remove("d-none");
-                setTimeout(() => {
-                    errorAlert.classList.add("d-none");
-                }, 4000);
-            } else {
-                errorAlert.classList.add("d-none");
-            }
-        }
-
-        function showMessage(message) {
-            const successAlert = document.getElementById("successAlert");
-            const errorAlert = document.getElementById("errorAlert"); // Hide error if success comes
-
-            errorAlert.classList.add("d-none"); // Ensure error alert is hidden
-            successAlert.textContent = message;
-            if (message) {
-                successAlert.classList.remove("d-none");
-                setTimeout(() => {
-                    successAlert.classList.add("d-none");
-                }, 4000);
-            } else {
-                successAlert.classList.add("d-none");
-            }
-        }
     });
-</script>
+}); 
+
+</Script>
 @endsection

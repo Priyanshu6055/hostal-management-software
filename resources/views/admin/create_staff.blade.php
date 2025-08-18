@@ -95,7 +95,15 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function fetchBuildings() {
-        fetch("{{ url('/api/buildings') }}")
+        fetch("{{ url('/api/admin/buildings') }}", {
+            method: "GET",
+            headers: {
+                "Accept": "application/json",           
+                "Content-Type": "application/json",
+                'token': localStorage.getItem('token'), // Include token for authentication
+                'auth-id': localStorage.getItem('auth-id') // Include auth-id for authorization
+            }
+        })
             .then(response => response.json())
             .then(response => {
                 let buildingSelect = document.getElementById("building_id");
@@ -134,12 +142,14 @@ document.addEventListener("DOMContentLoaded", function () {
             role: document.getElementById("role").value
         };
 
-        fetch("{{ url('/api/staff') }}", {
+        fetch("{{ url('/api/admin/staff/create') }}", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 "Accept": "application/json",
-                "X-CSRF-TOKEN": csrfToken // Now correctly uses the retrieved token
+                "X-CSRF-TOKEN": csrfToken, // Now correctly uses the retrieved token
+                'token': localStorage.getItem('token'), // Include token for authentication
+                'auth-id': localStorage.getItem('auth-id') // Include auth-id for authorization 
             },
             body: JSON.stringify(formData)
         })

@@ -4,14 +4,7 @@
 <div class="container mt-4">
     <h2 class="mb-4">Manage Beds</h2>
 
-    @if (session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
-
-    @if (session('error'))
-        <div class="alert alert-danger">{{ session('error') }}</div>
-    @endif
-
+    
     <div class="card mb-4">
         <div class="card-header">Create New Bed</div>
         <div class="card-body">
@@ -101,250 +94,250 @@
 </div>
 
 <script>
-    let roomMap = {};
-    let buildingMap = {};
-
-    document.addEventListener("DOMContentLoaded", function () {
+    $(document).ready(function() {
         fetchBuildings();
-        fetchRoomsMap();
+        fetchBeds();
 
-        document.getElementById('buildingSelect').addEventListener('change', function () {
-            fetchRoomsByBuilding(this.value);
+        $("#buildingSelect").on("change", function() {
+            const buildingId = $(this).val();
+            fetchRoomsByBuilding(buildingId);
         });
 
-        document.getElementById("createBedForm").addEventListener("submit", function (e) {
-            e.preventDefault();
-            const bedNumber = document.getElementById("bedNumber").value;
-            const roomId = document.getElementById("roomSelect").value;
+        $("#createBedForm").on("submit", function(event) {
+            event.preventDefault();
+            createBed();
+        });
 
-            fetch('/api/beds', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    bed_number: bedNumber,
-                    room_id: roomId,
-                    status: 'available'
-                })
-            })
-            .then(res => res.json())
-            .then(res => {
-                if (res.message) {
-                    showCustomMessageBox(res.message, 'success'); // Display success message
-                    fetchBeds();
-                    document.getElementById("createBedForm").reset();
-                    document.getElementById("roomSelect").innerHTML = '<option value="">-- Select Room --</option>';
-                } else {
-                    showCustomMessageBox('Failed to create bed.', 'danger'); // Display error message
-                }
-            })
-            .catch(error => {
-                console.error("Error creating bed:", error);
-                showCustomMessageBox('An error occurred while creating the bed.', 'danger'); // Display error message
-            });
+        $("#editForm").on("submit", function(event) {
+            event.preventDefault();
+            updateBed();
         });
     });
 
     function fetchBuildings() {
-        fetch("/api/buildings")
-            .then(res => res.json())
-            .then(response => {
-                const select = document.getElementById("buildingSelect");
-                select.innerHTML = '<option value="">-- Select Building --</option>';
-                buildingMap = {};
-                if (response.success && response.data) {
-                    response.data.forEach(building => {
-                        const option = document.createElement("option");
-                        option.value = building.id;
-                        option.textContent = building.name;
-                        buildingMap[building.id] = building.name;
-                        select.appendChild(option);
+        $.ajax({
+            url: '/api/admin/buildings',
+            type: 'GET',
+            headers: {
+                'token': localStorage.getItem('token'),
+                'auth-id': localStorage.getItem('auth-id')
+            },
+            success: function(response) {
+                if (response.success && Array.isArray(response.data)) {
+                    const select = $('#buildingSelect');
+                    select.empty().append('<option value="">-- Select Building --</option>');
+                    response.data.forEach(function(building) {
+                        select.append(`<option value="${building.id}">${building.name}</option>`);
                     });
                 } else {
-                    console.error("API response for buildings was not successful or data is missing:", response);
-                    showCustomMessageBox("Error loading buildings.", 'danger'); // Display error message
+                    console.error("Failed to load buildings:", response);
                 }
-            })
-            .catch(error => {
+            },
+            error: function(error) {
                 console.error("Error fetching buildings:", error);
-                showCustomMessageBox("Failed to load buildings.", 'danger'); // Display error message
-            });
+            }
+        });
     }
 
     function fetchRoomsByBuilding(buildingId) {
-        const roomSelect = document.getElementById("roomSelect");
-        roomSelect.innerHTML = '<option value="">Loading...</option>';
-
-        if (!buildingId) {
-            roomSelect.innerHTML = '<option value="">-- Select Room --</option>';
-            return;
-        }
-
-        fetch(`/api/buildings/${buildingId}/rooms`)
-            .then(res => res.json())
-            .then(response => {
-                roomSelect.innerHTML = '<option value="">-- Select Room --</option>';
-                const rooms = response.data || response;
-                if (Array.isArray(rooms)) {
-                    rooms.forEach(room => {
-                        const option = document.createElement("option");
-                        option.value = room.id;
-                        option.textContent = room.room_number;
-                        roomSelect.appendChild(option);
+        const roomSelect = $('#roomSelect');
+        roomSelect.empty().append('<option value="">-- Select Room --</option>');
+        if (!buildingId) return;
+        $.ajax({
+            url: `/api/admin/buildings/${buildingId}/rooms`,
+            type: 'GET',
+            headers: {
+                'token': localStorage.getItem('token'),
+                'auth-id': localStorage.getItem('auth-id')
+            },
+            success: function(response) {
+                if (response.success && Array.isArray(response.data)) {
+                    response.data.forEach(function(room) {
+                        roomSelect.append(`<option value="${room.id}">${room.room_number}</option>`);
                     });
                 } else {
-                    console.error("API response for rooms was not an array or data is missing:", response);
-                    showCustomMessageBox("Error loading rooms.", 'danger'); // Display error message
+                    console.error("Failed to load rooms:", response);
                 }
-            })
-            .catch(error => {
-                console.error("Error fetching rooms by building:", error);
-                roomSelect.innerHTML = '<option value="">Failed to load rooms</option>';
-                showCustomMessageBox("Failed to load rooms.", 'danger'); // Display error message
-            });
-    }
-
-    function fetchRoomsMap() {
-        fetch("/api/rooms")
-            .then(res => res.json())
-            .then(response => {
-                roomMap = {};
-                const rooms = response.data || response;
-                if (Array.isArray(rooms)) {
-                    rooms.forEach(room => {
-                        roomMap[room.id] = {
-                            number: room.room_number,
-                            building_id: room.building_id
-                        };
-                    });
-                } else {
-                    console.error("API response for rooms map was not an array or data is missing:", response);
-                    showCustomMessageBox("Error processing room data.", 'danger'); // Display error message
-                }
-                fetchBeds();
-            })
-            .catch(error => {
-                console.error("Error fetching rooms map:", error);
-                showCustomMessageBox("Failed to load room mapping data.", 'danger'); // Display error message
-            });
+            },
+            error: function(error) {
+                console.error("Error fetching rooms:", error);
+            }
+        });
     }
 
     function fetchBeds() {
-        fetch("/api/beds")
-            .then(res => res.json())
-            .then(response => {
-                const bedList = document.getElementById("bedList");
-                bedList.innerHTML = "";
-
-                const beds = response.data || response;
-                if (!Array.isArray(beds) || !beds.length) {
-                    bedList.innerHTML = `<tr><td colspan="6" class="text-center">No beds found.</td></tr>`;
-                    return;
+        $.ajax({
+            url: '/api/admin/beds',
+            type: 'GET',
+            headers: {
+                'token': localStorage.getItem('token'),
+                'auth-id': localStorage.getItem('auth-id')
+            },
+            success: function(response) {
+                const bedList = $('#bedList');
+                bedList.empty();
+                if (response.success && Array.isArray(response.data)) {
+                    response.data.forEach(function(bed, index) {
+                        bedList.append(`
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>${bed.bed_number}</td>
+                                <td>${bed.room ? bed.room.room_number : 'N/A'}</td>
+                                <td>${bed.room ? bed.room.building.name : 'N/A'}</td>
+                                <td><span class="badge bg-${bed.status === 'available' ? 'success' : 'danger'}">${bed.status.charAt(0).toUpperCase() + bed.status.slice(1)}</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-warning" onclick="openEditModal(${bed.id}, '${bed.bed_number}', ${bed.room_id}, '${bed.status}')">Edit</button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteBed(${bed.id})">Delete</button>
+                                </td>
+                            </tr>
+                        `);
+                    });
+                } else {
+                    bedList.append('<tr><td colspan="6" class="text-center">No beds found.</td></tr>');
                 }
-
-                beds.forEach((bed, index) => {
-                    const room = roomMap[bed.room_id];
-                    const roomNumber = room ? room.number : 'N/A';
-                    const buildingName = room && buildingMap[room.building_id] ? buildingMap[room.building_id] : 'N/A';
-                    let badge = bed.status === 'available' ? 'success' : 'danger';
-
-                    bedList.innerHTML += `
-                        <tr>
-                            <td>${index + 1}</td>
-                            <td>${bed.bed_number}</td>
-                            <td>${roomNumber}</td>
-                            <td>${buildingName}</td>
-                            <td><span class="badge bg-${badge}">${bed.status.toUpperCase()}</span></td>
-                            <td>
-                                <button class="btn btn-sm btn-warning" onclick="openEditModal(${bed.id}, '${bed.bed_number}', ${bed.room_id}, '${bed.status}')">Edit</button>
-                                <button class="btn btn-sm btn-danger" onclick="deleteBed(${bed.id})">Delete</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-            })
-            .catch(error => {
+            },
+            error: function(error) {
                 console.error("Error fetching beds:", error);
-                document.getElementById("bedList").innerHTML = `<tr><td colspan="6" class="text-danger text-center">Failed to load beds.</td></tr>`;
-                showCustomMessageBox("Failed to load beds.", 'danger'); // Display error message
-            });
+                $('#bedList').html('<tr><td colspan="6" class="text-danger text-center">Failed to load beds.</td></tr>');
+            }
+        });
     }
 
-    // Function to show a custom message box
-    function showCustomMessageBox(message, type = 'info') {
-        const messageContainer = document.createElement('div');
-        messageContainer.className = `alert alert-${type} mt-3`;
-        messageContainer.textContent = message;
-        document.querySelector('.container').prepend(messageContainer);
-        setTimeout(() => messageContainer.remove(), 3000); // Remove after 3 seconds
-    }
+    function createBed() {
+        const formData = {
+            bed_number: $('#bedNumber').val(),
+            room_id: $('#roomSelect').val(),
+            status: 'available'
+        };
 
+        $.ajax({
+            url: '/api/admin/beds/create',
+            type: 'POST',
+            headers: {
+                'token': localStorage.getItem('token'),
+                'auth-id': localStorage.getItem('auth-id')
+            },
+            data: formData,
+            success: function(response) {
+                if (response.success) {
+                    showAlert("success", response.message || "Bed created successfully!");
+                    fetchBeds();
+                    $('#createBedForm')[0].reset();
+                } else {
+                    showAlert("danger", response.message || "Failed to create bed.");
+                }
+            },
+            error: function(error) {
+                console.error("Error creating bed:", error);
+                showAlert("danger", "An error occurred while creating the bed.");
+            }
+        });
+    }   
 
     function openEditModal(id, bedNumber, roomId, status) {
-        document.getElementById("editId").value = id;
-        document.getElementById("editBedNumber").value = bedNumber;
-        document.getElementById("editRoomId").value = roomId;
-        document.getElementById("editStatus").value = status;
-        new bootstrap.Modal(document.getElementById("editModal")).show();
+        $('#editId').val(id);
+        $('#editBedNumber').val(bedNumber);
+        $('#editRoomId').val(roomId);
+        $('#editStatus').val(status);
+        $('#editModal').modal('show');
     }
 
-    document.getElementById("editForm").addEventListener("submit", function (e) {
-        e.preventDefault();
+    function updateBed() {
+        const id = $('#editId').val();
+        const formData = {
+            bed_number: $('#editBedNumber').val(),
+            room_id: $('#editRoomId').val(),
+            status: $('#editStatus').val()
+        };
 
-        const id = document.getElementById("editId").value;
-        const bedNumber = document.getElementById("editBedNumber").value;
-        const roomId = document.getElementById("editRoomId").value;
-        const status = document.getElementById("editStatus").value;
-
-        fetch(`/api/beds/${id}`, {
-            method: 'PUT',
+        $.ajax({
+            url: `/api/admin/beds/update/${id}`,
+            type: 'PUT',
             headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'token': localStorage.getItem('token'),
+                'auth-id': localStorage.getItem('auth-id')
             },
-            body: JSON.stringify({ bed_number: bedNumber, room_id: roomId, status: status })
-        })
-        .then(res => res.json())
-        .then(response => {
-            if (response.success) {
-                showCustomMessageBox(response.message || "Bed updated successfully.", 'success');
-                fetchRoomsMap();
-                bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
-            } else {
-                showCustomMessageBox(response.message || "Failed to update bed.", 'danger');
+            data: formData,
+            success: function(response) {
+                if (response.success) {
+                    showAlert("success", response.message || "Bed updated successfully!");
+                    fetchBeds();
+                    $('#editModal').modal('hide');
+                } else {
+                    showAlert("danger", response.message || "Failed to update bed.");
+                }
+            },
+            error: function(error) {
+                console.error("Error updating bed:", error);
+                showAlert("danger", "An error occurred while updating the bed.");
             }
-        })
-        .catch(error => {
-            console.error("Error updating bed:", error);
-            showCustomMessageBox("An error occurred while updating the bed.", 'danger');
         });
-    });
+    }   
+
 
     function deleteBed(id) {
-        // Directly call performDelete, as confirm() is removed.
-        // A proper confirmation would involve a custom modal.
-        performDelete(id);
+        if (confirm("Are you sure you want to delete this bed?")) {
+            $.ajax({
+                url: `/api/admin/beds/${id}`,
+                type: 'DELETE',
+                headers: {
+                    'token': localStorage.getItem('token'),
+                    'auth-id': localStorage.getItem('auth-id')
+                },
+                success: function(response) {
+                    if (response.success) {
+                        showAlert("success", response.message || "Bed deleted successfully!");
+                        fetchBeds();
+                    } else {
+                        showAlert("danger", response.message || "Failed to delete bed.");
+                    }
+                },
+                error: function(error) {
+                    console.error("Error deleting bed:", error);
+                    showAlert("danger", "An error occurred while deleting the bed.");
+                }
+            });
+        }
+    }   
+
+    function showAlert(type, message) {
+        const alert = `<div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>`;
+        $('.container').prepend(alert);
+    }   
+
+    // Function to reset the floor dropdown 
+    function resetFloorDropdown(floors) {
+        const floorSelect = $("#floorSelect");
+        floorSelect.empty();
+        floorSelect.append('<option value="">-- Select Floor --</option>');
+        if (floors > 0) {
+            for (let i = 1; i <= floors; i++) {
+                const option = $("<option></option>")
+                    .val(i)
+                    .text(`Floor ${i}`);
+                floorSelect.append(option);
+            }
+        } else {                
+            floorSelect.append('<option value="">No floors available</option>');
+        }   
     }
 
-    function performDelete(id) {
-        fetch(`/api/beds/${id}`, {
-            method: 'DELETE'
-        })
-        .then(res => res.json())
-        .then(response => {
-            if (response.success) {
-                showCustomMessageBox(response.message || "Bed deleted successfully.", 'success');
-                fetchRoomsMap();
-            } else {
-                showCustomMessageBox(response.message || "Failed to delete bed.", 'danger');
-            }
-        })
-        .catch(error => {
-            console.error("Error deleting bed:", error);
-            showCustomMessageBox("An error occurred while deleting the bed.", 'danger');
-        });
+    // Function to update the floor dropdown based on selected building
+    function updateFloorDropdown(buildingId) {
+        const floors = getBuildingFloorsById(buildingId);
+        resetFloorDropdown(floors);
     }
-</script>
+    // Function to get the number of floors for the selected building
+    function getBuildingFloorsById(buildingId) {
+        const buildingSelect = $("#buildingSelect");
+        const selectedBuilding = buildingSelect.find(`option[value="${buildingId}"]`);
+        return selectedBuilding.length ? parseInt(selectedBuilding.data("floors")) : 0;
+    }
+
+
+
+    </script>
 @endsection

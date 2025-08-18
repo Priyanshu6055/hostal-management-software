@@ -283,7 +283,15 @@
 
         guestList.innerHTML = `<tr><td colspan="17" class="text-center">Loading pending guests...</td></tr>`;
 
-        fetch("{{ url('/api/guests/pending') }}")
+        fetch("{{ url('/api/admin/guests/pending') }}", {
+            method: "GET",
+            headers: {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                'token': localStorage.getItem('token'),
+                'auth-id': localStorage.getItem('auth-id')
+            }
+        })
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -366,12 +374,14 @@
     }
 
     window.approveGuest = function(guestId) {
-        fetch("{{ url('/api/admin/approved-guest') }}", {
+        fetch("{{ url('/api/admin/approve-guest') }}", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     "X-CSRF-TOKEN": getCsrfToken(),
-                    "Accept": "application/json"
+                    "Accept": "application/json",
+                    'token': localStorage.getItem('token'),
+                    'auth-id': localStorage.getItem('auth-id')
                 },
                 body: JSON.stringify({
                     guest_id: guestId
@@ -401,12 +411,14 @@
             return;
         }
 
-        fetch("{{ url('/api/payment/reject') }}", {
+        fetch("{{ url('/api/admin/payment/reject') }}", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     "X-CSRF-TOKEN": getCsrfToken(),
-                    "Accept": "application/json"
+                    "Accept": "application/json",
+                    'token': localStorage.getItem('token'),
+                    'auth-id': localStorage.getItem('auth-id')
                 },
                 body: JSON.stringify({
                     guest_id: guestId,
@@ -442,7 +454,9 @@
                 headers: {
                     "Content-Type": "application/json",
                     "X-CSRF-TOKEN": getCsrfToken(),
-                    "Accept": "application/json"
+                    "Accept": "application/json",
+                    'token': localStorage.getItem('token'),
+                    'auth-id': localStorage.getItem('auth-id')  
                 },
                 body: JSON.stringify({
                     guest_id: guestId,
@@ -594,7 +608,10 @@
                         method: 'POST',
                         body: formData,
                         headers: {
-                            'X-CSRF-TOKEN': getCsrfToken()
+                            'X-CSRF-TOKEN': getCsrfToken(),
+                            'Accept': 'application/json',
+                            'token': localStorage.getItem('token'),
+                            'auth-id': localStorage.getItem('auth-id')
                         }
                     });
                     const result = await response.json();
@@ -766,7 +783,14 @@
             if (hostelFeeInput) hostelFeeInput.addEventListener('input', updateCalculatedTotal);
             if (cautionMoneyInput) cautionMoneyInput.addEventListener('input', updateCalculatedTotal);
 
-            fetch(`/api/guest/${guestId}/fee-exception-details`)
+            fetch(`/api/guest/${guestId}/fee-exception-details`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'token': localStorage.getItem('token'),     
+                    'auth-id': localStorage.getItem('auth-id')
+                }
+            })
                 .then(res => res.json())
                 .then(response => {
                     if (response.success && response.data) {

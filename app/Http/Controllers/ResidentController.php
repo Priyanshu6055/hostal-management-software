@@ -8,13 +8,14 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Log;
 
 class ResidentController extends Controller
 {
     public function getAllResidents()
     {
         try {
-            $residents = Resident::with(['user', 'bed', 'guest', 'creator'])->get();
+            $residents = Resident::with(['user', 'bed.room.building', 'guest', 'creator'])->get();
 
             return response()->json([
                 'success' => true,
@@ -143,6 +144,7 @@ class ResidentController extends Controller
 
     public function getUnassignedResidents()
     {
+        // Log::info('Fetching unassigned residents');
         try {
             $residents = Resident::whereNull('bed_id')
                 ->where('status', 'pending')
@@ -156,7 +158,7 @@ class ResidentController extends Controller
                         'scholar_number' => optional($resident->guest)->scholar_no,
                     ];
                 });
-
+            Log::info('Unassigned residents fetched successfully', ['count' => $residents->count()]);
             return response()->json([
                 'success' => true,
                 'message' => 'Unassigned residents fetched successfully.',

@@ -48,7 +48,7 @@ class UniversityController extends Controller
                 'location'  => 'required|string',
                 'state'     => 'required|string',
                 'district'  => 'required|string',
-                'pincode'   => 'required|string|max:10|unique:universities',
+                'pincode'   => 'required|string|max:6|unique:universities',
                 'address'   => 'required|string',
                 'mobile'    => 'required|string|max:15|unique:universities',
                 'email'     => 'required|email|unique:universities'

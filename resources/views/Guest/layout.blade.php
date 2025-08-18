@@ -12,9 +12,13 @@
     <div class="d-flex">
         <!-- Sidebar -->
         <nav class="bg-dark text-white p-3" style="width: 250px; height: 100vh;">
-            <h4>Guest Panel</h4>
+            <!-- <h4>Guest Panel</h4> -->
+            <form method="POST" action="{{ route('logout') }}" class="d-inline">
+                @csrf
+                <button type="submit" class="btn btn-danger">Logout</button>
+            </form>
             <ul class="nav flex-column">
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                     <a href="{{ url('/guest') }}" class="nav-link text-white">
                         <i class="fas fa-home"></i> Dashboard
                     </a>
@@ -23,12 +27,12 @@
                     <a href="{{ url('guest/register') }}" class="nav-link text-white">
                         <i class="fas fa-user-plus"></i> Apply for Registration
                     </a>
-                </li>
-                <li class="nav-item">
+                </li> -->
+                <!-- <li class="nav-item">
                     <a href="{{ url('/guest/status') }}" class="nav-link text-white">
                         <i class="fas fa-tasks"></i> Application Status
                     </a>
-                </li>
+                </li> -->
             </ul>
         </nav>
 

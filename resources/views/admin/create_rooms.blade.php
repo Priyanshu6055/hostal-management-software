@@ -41,140 +41,136 @@
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-    // Helper function to display messages
-    function showMessage(type, message) {
-        const responseMessage = document.getElementById("responseMessage");
-        responseMessage.className = `alert alert-${type}`;
-        responseMessage.innerText = message;
-        responseMessage.style.display = "block";
-        setTimeout(() => {
-            responseMessage.style.display = "none";
-        }, 4000); // Hide message after 4 seconds
-    }
+    $(document).ready(function() {
+        // Fetch buildings and populate the dropdown
+        fetchBuildings();
 
-    fetchBuildings();
-
-    // Event listener when a building is selected
-    document.getElementById('building_id').addEventListener('change', function () {
-        const selectedBuildingId = this.value;
-        const selectedBuildingFloors = getBuildingFloorsById(selectedBuildingId);
-        updateFloorDropdown(selectedBuildingFloors);
-    });
-
-    document.getElementById("createRoomForm").addEventListener("submit", function (event) {
-        event.preventDefault();
-
-        const room_number = document.getElementById("room_number").value;
-        const building_id = document.getElementById("building_id").value;
-        const floor_no = document.getElementById("floorSelect").value;
-        const status = document.getElementById("status").value;
-
-        fetch("/api/rooms", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').content : '', // Get CSRF token
-            },
-            body: JSON.stringify({
-                room_number: room_number,
-                building_id: building_id,
-                floor_no: floor_no,
-                status: status
-            })
-        })
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(err => { throw err; });
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) { // Check for 'success' flag in the response
-                showMessage("success", data.message || "Room created successfully!");
-                // Reset form and floor dropdown
-                document.getElementById("createRoomForm").reset();
-                document.getElementById('floorSelect').innerHTML = '<option value="">-- Select Floor --</option>';
-            } else {
-                showMessage("danger", data.message || "Error creating room. Please try again.");
-            }
-        })
-        .catch(error => {
-            let errorMessage = "An unexpected error occurred.";
-            if (error.message) {
-                errorMessage = error.message;
-            } else if (error.errors) { // Handle Laravel validation errors
-                errorMessage = Object.values(error.errors).flat().join('<br>');
-            }
-            showMessage("danger", `Error: ${errorMessage}`);
-            console.error("Error creating room:", error);
+        // Event listener for form submission
+        $("#createRoomForm").on("submit", function(event) {
+            event.preventDefault();
+            createRoom();
         });
+
+        // Event listener for building selection change
+        $("#building_id").on("change", function() {
+            const selectedBuildingId = $(this).val();
+            const selectedBuildingFloors = getBuildingFloorsById(selectedBuildingId);
+            updateFloorDropdown(selectedBuildingFloors);
+        });
+
+        
+
     });
-
-    // Fetch buildings and populate the dropdown
+    // Function to fetch buildings and populate the dropdown
     function fetchBuildings() {
-        fetch("/api/buildings")
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(text => { throw new Error(`HTTP error! Status: ${response.status}, Message: ${text}`); });
-                }
-                return response.json();
-            })
-            .then(apiResponse => {
-                const buildingSelect = document.getElementById("building_id");
-                buildingSelect.innerHTML = '<option value="">-- Select Building --</option>'; // Clear and add default
+        $.ajax({
+            url: "/api/admin/buildings",
+            type: "GET",                    
+            headers: {
+                'token': localStorage.getItem('token'),
+                'auth-id': localStorage.getItem('auth-id')
+            },
+            success: function(response) {
+                const buildingSelect = $("#building_id");
+                buildingSelect.empty();
+                buildingSelect.append('<option value="">-- Select Building --</option>');
+                if (response.success && Array.isArray(response.data)) {
+                    response.data.forEach(function(building) {
+                        const option = $("<option></option>")
 
-                // Check if the API response indicates success and contains data
-                if (apiResponse.success && Array.isArray(apiResponse.data)) {
-                    apiResponse.data.forEach(building => {
-                        const option = document.createElement("option");
-                        option.value = building.id;
-                        option.textContent = building.name;
-                        option.dataset.floors = building.floors;  // Store the number of floors in the option
-                        buildingSelect.appendChild(option);
-                    });
+                            .val(building.id)
+                            .text(building.name)
+                            .data("floors", building.floors); // Store the number of floors in the option
+                        buildingSelect.append(option);
+                    }); 
                 } else {
                     showMessage("danger", "Invalid response from server for buildings. Expected an array in 'data' field.");
-                    console.error("Invalid building data structure:", apiResponse);
+                    console.error("Invalid building data structure:", response);
                 }
-            })
-            .catch(error => {
+            },
+            error: function(xhr) {
                 let errorMessage = "Failed to load buildings.";
-                if (error.message) {
-                    errorMessage = error.message;
-                } else if (error instanceof TypeError) {
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                } else if (xhr.status === 0) {
                     errorMessage = "Could not connect to the server. Please check your network connection.";
                 }
                 showMessage("danger", `Error: ${errorMessage}`);
-                console.error("Error fetching buildings:", error);
-            });
+                console.error("Error fetching buildings:", xhr);        
+            }
+        });
     }
-
-    // Get the number of floors for the selected building
+    // Function to get the number of floors for the selected building
     function getBuildingFloorsById(buildingId) {
-        const buildingSelect = document.getElementById("building_id");
-        const selectedBuilding = Array.from(buildingSelect.options).find(option => option.value == buildingId);
-        return selectedBuilding ? parseInt(selectedBuilding.dataset.floors) : 0;
+        const buildingSelect = $("#building_id");
+        const selectedBuilding = buildingSelect.find(`option[value="${buildingId}"]`);
+        return selectedBuilding.length ? parseInt(selectedBuilding.data("floors")) : 0;
     }
-
-    // Update the floor dropdown based on the selected building's floors
+    // Function to update the floor dropdown based on the selected building's floors
     function updateFloorDropdown(floors) {
-        const floorSelect = document.getElementById("floorSelect");
-        floorSelect.innerHTML = '<option value="">-- Select Floor --</option>';
-
+        const floorSelect = $("#floorSelect");
+        floorSelect.empty();
+        floorSelect.append('<option value="">-- Select Floor --</option>');
         if (floors > 0) {
             for (let i = 1; i <= floors; i++) {
-                const option = document.createElement("option");
-                option.value = i;
-                option.textContent = `Floor ${i}`;
-                floorSelect.appendChild(option);
+                const option = $("<option></option>")
+                    .val(i)
+                    .text(`Floor ${i}`);
+                floorSelect.append(option);
             }
-        } else {
-            floorSelect.innerHTML = '<option value="">No floors available</option>';
+        } else {                
+            floorSelect.append('<option value="">No floors available</option>');
         }
     }
-});
-</script>
+    // Function to create a room
+    function createRoom() {
+        const roomData = {
+            room_number: $("#room_number").val(),
+            building_id: $("#building_id").val(),       
+            floor_no: $("#floorSelect").val(),
+            status: $("#status").val()
+        };
+        $.ajax({
+            url: "/api/admin/rooms/create", // Adjust the URL as per your API endpoint
+            type: "POST",       
+            headers: {
+                'token': localStorage.getItem('token'),
+                'auth-id': localStorage.getItem('auth-id'),
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') // Get CSRF token
+            },
+            contentType: "application/json",
+            data: JSON.stringify(roomData),
+            success: function(response) {
+                if (response.success) {
+                    showMessage("success", response.message || "Room created successfully!");
+                    $("#createRoomForm")[0].reset(); // Reset the form
+                    $("#floorSelect").empty().append('<option value="">-- Select Floor --</option>'); // Reset floor dropdown
 
+                } else {
+                    showMessage("danger", response.message || "Error creating room. Please try again.");
+                }
+            },
+            error: function(xhr) {
+                let errorMessage = "An unexpected error occurred.";
+                if (xhr.responseJSON && xhr.responseJSON.message) {     
+                    errorMessage = xhr.responseJSON.message;
+                } else if (xhr.status === 422) { // Handle Laravel validation errors
+                    errorMessage = Object.values(xhr.responseJSON.errors).flat().join('<br>');
+                }   
+                showMessage("danger", `Error: ${errorMessage}`);
+                console.error("Error creating room:", xhr);
+            }
+        });
+    }   
+    // Function to show messages
+    function showMessage(type, message) {
+        const responseMessage = $("#responseMessage");  
+        responseMessage.removeClass("alert-success alert-danger").addClass(`alert-${type}`);
+        responseMessage.text(message).show();
+        setTimeout(() => {
+            responseMessage.hide();
+        }, 4000); // Hide message after 4 seconds
+    }
+</script>
 @endsection
+

@@ -33,8 +33,8 @@ return [
     |
     */
 
-    'guard' => ['web','api'],
-
+    'guard' => ['web','api','guest-api'],
+    // 'guard' => ['guest-api'],
     /*
     |--------------------------------------------------------------------------
     | Expiration Minutes

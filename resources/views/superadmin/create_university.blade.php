@@ -1,6 +1,11 @@
 @extends('superadmin.layout')
 
 @section('content')
+
+<head>
+
+<meta name="csrf-token" content="{{ csrf_token() }}">
+</head>
 <h2 class="mb-4">Create University</h2>
 
 <div id="message" class="mt-3"></div>

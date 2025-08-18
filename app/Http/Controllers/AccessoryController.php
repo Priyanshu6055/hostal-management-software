@@ -28,8 +28,7 @@ class AccessoryController extends Controller
             'accessory_head_id' => 'required|exists:accessory_heads,id',
             'price' => 'required|numeric',
             'is_default' => 'nullable|boolean',
-            'created_by' => 'nullable|integer|exists:users,id',
-        ]);
+        ]);        
 
         if ($validator->fails()) {
             return $this->apiResponse(false, 'Validation failed.', null, 422, $validator->errors());
@@ -64,7 +63,7 @@ class AccessoryController extends Controller
                 'is_default' => $request->is_default ?? false,
                 'from_date' => $today,
                 'is_active' => true,
-                'created_by' => $request->created_by ?? null,
+                'created_by' => $request->header("auth-id") ?? null,
             ]);
 
             return $this->apiResponse(true, 'Accessory added/updated successfully.', $newAccessory, 201);
@@ -137,4 +136,20 @@ class AccessoryController extends Controller
             ]);
         }
     }
+
+
+        // ✅ Get All Accessories
+    public function ResidentAccessories($residentId)
+    {
+        try {
+            $accessories = Accessory::with('accessoryHead')->get();
+
+            return $this->apiResponse(true, 'All accessories fetched successfully.', $accessories);
+        } catch (Exception $e) {
+            return $this->apiResponse(false, 'Failed to fetch accessories.', null, 500, [
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
 }

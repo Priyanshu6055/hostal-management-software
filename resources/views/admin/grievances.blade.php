@@ -68,7 +68,7 @@
 
 <script>
     // Get the current authenticated user's ID from Laravel Blade
-    const currentUserId = {{ auth()->id() }};
+    const currentUserId = localStorage.getItem('auth-id');
     let currentGrievanceId = null; // Stores the ID of the currently viewed grievance
     let grievanceStatus = null; // Stores the status of the currently viewed grievance
     let allResidentsData = []; // Stores all residents data fetched from the API
@@ -101,7 +101,14 @@
      * This is called once on page load to optimize subsequent resident detail lookups.
      */
     function loadAllResidentsData() {
-        fetch('http://127.0.0.1:8000/api/residents')
+        fetch('/api/admin/residents', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',         
+                'token': localStorage.getItem('token'),
+                'auth-id': localStorage.getItem('auth-id')
+            }
+        })
             .then(response => response.json())
             .then(data => {
                 if (data.success && data.data) {

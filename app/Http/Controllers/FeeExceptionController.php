@@ -331,7 +331,7 @@ class FeeExceptionController extends Controller
                 ]
             );
         } catch (\Exception $e) {
-            \Log::error('Error updating guest status: ' . $e->getMessage());
+            Log::error('Error updating guest status: ' . $e->getMessage());
 
             return $this->apiResponse(
                 false,

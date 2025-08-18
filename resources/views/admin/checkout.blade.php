@@ -93,7 +93,14 @@
      * Fetches admin checkout requests from the API and populates the table.
      */
     function fetchAdminCheckoutRequests() {
-        fetch('http://127.0.0.1:8000/api/checkout-requests')
+        fetch('/api/admin/resident/all-checkout-requests', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'token': localStorage.getItem('token'),
+                'auth-id': localStorage.getItem('auth-id')  
+            }
+        })
             .then(response => response.json())
             .then(data => {
                 const tbody = document.querySelector('#checkoutRequestsTable tbody');
@@ -181,11 +188,13 @@
      * @param {HTMLElement} actionCell - The table cell to update with the new status badge.
      */
     function updateApproval(checkoutId, status, actionCell) {
-        fetch(`http://127.0.0.1:8000/api/checkout/admin-approval/${checkoutId}`, {
+        fetch(`/api/admin/checkout/admin-approval/${checkoutId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
+                'token': localStorage.getItem('token'),
+                'auth-id': localStorage.getItem('auth-id')
             },
             body: JSON.stringify({ status: status })
         })
@@ -235,7 +244,14 @@
         // Clear previous messages
         document.getElementById('accessoryMessage').innerHTML = '';
 
-        fetch(`http://127.0.0.1:8000/api/default/accessories/${residentId}`)
+        fetch(`/api/admin/accessories/${residentId}`, {
+            method: 'GET',
+            headers: {      
+                'Content-Type': 'application/json',
+                'token': localStorage.getItem('token'),
+                'auth-id': localStorage.getItem('auth-id')
+            }
+        })
             .then(response => response.json())
             .then(apiResponse => {
                 const modalBody = document.getElementById('accessoryModalBody');
@@ -377,11 +393,13 @@
         const messageDiv = document.getElementById('accessoryMessage');
         messageDiv.innerHTML = ''; // Clear previous messages
 
-        fetch(`http://127.0.0.1:8000/api/admin/accessory/checking/${residentId}`, {
+        fetch(`/api/admin/accessory/checking/${residentId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
+                'token': localStorage.getItem('token'),
+                'auth-id': localStorage.getItem('auth-id')
             },
             body: JSON.stringify({ accessories })
         })

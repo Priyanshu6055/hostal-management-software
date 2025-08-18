@@ -13,7 +13,8 @@ use Carbon\Carbon;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-
+use Illuminate\Support\Facades\Auth;
+use App\Helpers\Helper;
 
 class GuestController extends Controller
 {
@@ -386,7 +387,8 @@ class GuestController extends Controller
     public function getGuestTotalAmount(Request $request, $guest_id)
     {
         try {
-            $guest = Guest::select('id', 'months', 'days', 'status', 'fee_waiver')->findOrFail($guest_id);
+            $user = Helper::get_auth_guest_user($request);
+            $guest = Guest::select('id', 'months', 'days', 'status', 'fee_waiver')->findOrFail($user->id);
 
             $months = $guest->months ?? 1;
             $days = $guest->days ?? 0;
@@ -468,15 +470,16 @@ class GuestController extends Controller
 
 
 
-    public function pendingGuests()
+    public function pendingGuests(Request $request)
     {
         try {
-            // Only fetch guests whose status is NOT 'paid' or 'rejected'
-            $guests = Guest::with([
-                'accessories.accessoryHead:id,name'
-            ])->whereNotIn('status', ['paid', 'approved', 'rejected', 'waiver_approved','waiver_rejected'])
-                ->with('feeException')->get();
-
+            $user = Helper::get_auth_guest_user($request);
+            $guests = Guest::Where('id',$user->id)
+            ->with(['accessories.accessoryHead:id,name'])
+            ->whereNotIn('status', ['paid', 'approved', 'rejected', 'waiver_approved','waiver_rejected'])
+               ->with('feeException')
+                ->get();
+            
             return response()->json([
                 'success' => true,
                 'message' => 'Pending guests with accessories fetched successfully',
@@ -500,7 +503,9 @@ class GuestController extends Controller
             // Only fetch guests whose status is NOT 'paid' or 'rejected'
             $guests = Guest::with([
                 'accessories.accessoryHead:id,name'
-            ])->whereNotIn('status', ['paid', 'approved', 'rejected', 'pending', 'accountant_reject'])->get();
+            ])
+            ->whereNotIn('status', ['paid', 'approved', 'rejected', 'accountant_reject'])
+            ->get();
 
             return response()->json([
                 'success' => true,
@@ -519,15 +524,42 @@ class GuestController extends Controller
     }
 
 
-    public function getPaidGuests()
+    public function guestsStatus()
     {
         try {
-            $guests = Guest::where('status', 'paid')->get();
+            // Only fetch guests whose status is NOT 'paid' or 'rejected'
+            $guests = Guest::with([
+                'accessories.accessoryHead:id,name'
+            ])
+            ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pending guests with accessories fetched successfully',
+                'data' => $guests,
+                'errors' => null
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch pending guests',
+                'data' => null,
+                'errors' => ['exception' => $e->getMessage()]
+            ], 500);
+        }
+    }
+
+
+    public function getPaidGuests(Request $request)
+    {
+        try {
+            $user = Helper::get_auth_guest_user($request);
+            $guests = Guest::find($user->id)->where('status', 'paid')->get();
 
             if ($guests->isEmpty()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'No guests with paid status found.',
+                    'message' => 'This guest is not found with paid status.',
                     'data' => [],
                     'errors' => null
                 ]);
@@ -550,10 +582,11 @@ class GuestController extends Controller
     }
 
 
-    public function getApprovedOrRejectedGuests()
+    public function getApprovedOrRejectedGuests(Request $request)
     {
         try {
-            $guests = Guest::whereIn('status', ['approved', 'rejected', 'pending', 'waiver_approved', 'waiver_rejected'])->get();
+            $user = Helper::get_auth_guest_user($request);
+            $guests = Guest::where('id',$user->id)->whereIn('status', ['approved', 'rejected', 'pending', 'waiver_approved', 'waiver_rejected'])->get();
 
             return response()->json([
                 'success' => true,
@@ -608,7 +641,7 @@ class GuestController extends Controller
                 'data' => $data
             ]);
         } catch (\Exception $e) {
-            \Log::error("Error fetching total amount for guest {$guest->id}: " . $e->getMessage());
+            Log::error("Error fetching total amount for guest {$guest->id}: " . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch payment details.',

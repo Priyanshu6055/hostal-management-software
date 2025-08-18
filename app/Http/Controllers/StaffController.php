@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -53,6 +54,44 @@ class StaffController extends Controller
             ], 500);
         }
     }
+
+    public function getStaffDetails(Request $request, $id)
+    {
+        try {
+            $users = User::whereHas('roles', function ($query) {
+                $query->whereNotIn('name', ['super_admin', 'admin', 'resident']);
+            })->with('roles:id,name')->where('id',$id)->select('id', 'name', 'email','building_id')->get();
+
+
+            if ($users->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No staff found',
+                    'data' => null,
+                    'errors' => null,
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Staff retrieved successfully',
+                'data' => $users,
+                'errors' => null,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error fetching staff details: ' . $e->getMessage(), [
+                'id' => $id,
+                'request' => $request->all(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while fetching staff',
+                'data' => null,
+                'errors' => ['exception' => $e->getMessage()],
+            ], 500);
+        }
+    }
+
 
     public function getStaff()
     {
@@ -107,7 +146,6 @@ class StaffController extends Controller
                     'errors' => null,
                 ], 404);
             }
-
             return response()->json([
                 'success' => true,
                 'message' => 'All staff retrieved successfully',
@@ -135,7 +173,7 @@ class StaffController extends Controller
                     'email',
                     Rule::unique('users')->ignore($id),
                 ],
-                'password' => 'sometimes|nullable|string|min:6',
+                // 'password' => 'sometimes|nullable|string|min:6',
                 'building_id' => 'sometimes|required|exists:buildings,id',
                 'role' => 'sometimes|required|string|in:warden,security,mess_manager,gym_manager',
             ]);

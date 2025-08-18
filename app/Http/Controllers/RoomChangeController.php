@@ -23,8 +23,9 @@ class RoomChangeController extends Controller
             $validated = $request->validate([
                 'reason' => 'required|string',
                 'preference' => 'nullable|string',
-                'created_by' => 'required',
+                // 'created_by' => 'required',
             ]);
+            $validated['created_by'] = $request->header('auth-id'); // Admin ID from header
 
             $resident = Resident::find($resident_id);
             if (!$resident) {
@@ -112,8 +113,8 @@ class RoomChangeController extends Controller
     {
         try {
             $validated = $request->validate([
+                'action' => 'required|in:available,not_available',
                 'remark' => 'nullable|string',
-                'created_by' => 'required|integer',
             ]);
 
             $roomRequest = RoomChangeRequest::findOrFail($request_id);
@@ -125,7 +126,7 @@ class RoomChangeController extends Controller
                 'room_change_request_id' => $request_id,
                 'sender' => 'admin',
                 'message' => $validated['remark'] ?? 'No remark',
-                'created_by' => $validated['created_by'],
+                'created_by' => $request->header('auth-id'), // Admin ID from header
             ]);
 
             return response()->json([
@@ -344,7 +345,7 @@ class RoomChangeController extends Controller
     }
 
     public function getRoomChangeRequestsByResidentId($residentId)
-{
+    {
     try {
         $requests = RoomChangeRequest::with([
             'resident.user:id,name',
@@ -380,4 +381,82 @@ class RoomChangeController extends Controller
         ], 500);
     }
 }
+
+    public function getRoomChangeRequests(Request $request)
+    {
+    try {
+        $residentId = Resident::where('user_id', $request->header('auth-id'))->value('id');
+        $requests = RoomChangeRequest::with([
+            'resident.user:id,name',
+            'resident.room'
+        ])->where('resident_id', $residentId)->get();
+
+        $data = $requests->map(function ($request) {
+            return [
+                'id' => $request->id,
+                'token' => $request->token,
+                'resident_name' => $request->resident->user->name ?? null,
+                'room_number' => $request->resident->room->room_number ?? null,
+                'reason' => $request->reason,
+                'preference' => $request->preference,
+                'action' => $request->action,
+                'created_by' => $request->created_by,
+                'created_at' => $request->created_at->toDateTimeString(),
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Room change requests retrieved successfully.',
+            'data' => $data,
+            'errors' => null
+        ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch room change requests for this resident.',
+                'data' => null,
+                'errors' => ['details' => $e->getMessage()]
+            ], 500);
+        }
+    }
+
+    public function getRoomChangeRequestsById(Request $request, $id)
+    {
+    try {
+        $residentId = Resident::where('user_id', $request->header('auth-id'))->value('id');
+        $requests = RoomChangeRequest::with([
+            'resident.user:id,name',
+            'resident.room'
+        ])->where('resident_id', $residentId)->where('id', $id)->get();
+
+        $data = $requests->map(function ($request) {
+            return [
+                'id' => $request->id,
+                'token' => $request->token,
+                'resident_name' => $request->resident->user->name ?? null,
+                'room_number' => $request->resident->room->room_number ?? null,
+                'reason' => $request->reason,
+                'preference' => $request->preference,
+                'action' => $request->action,
+                'created_by' => $request->created_by,
+                'created_at' => $request->created_at->toDateTimeString(),
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Room change requests retrieved successfully.',
+            'data' => $data,
+            'errors' => null
+        ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch room change requests for this resident.',
+                'data' => null,
+                'errors' => ['details' => $e->getMessage()]
+            ], 500);
+        }
+    }
 }

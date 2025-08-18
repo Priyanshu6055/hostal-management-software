@@ -41,9 +41,17 @@ document.addEventListener("DOMContentLoaded", function () {
     fetchLeaveRequests();
 
     function fetchLeaveRequests() {
-        let apiUrl = "{{ url('/api/leave-requests') }}";
+        let apiUrl = "{{ url('/api/admin/leave-requests') }}";
 
-        fetch(apiUrl)
+        fetch(apiUrl, {
+            method: "GET",
+            headers: {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                'token': localStorage.getItem('token'),
+                'auth-id': localStorage.getItem('auth-id')
+            }
+        })
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! Status: ${response.status}`);
@@ -95,14 +103,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
     window.updateStatus = function (id, role, action) {
         let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        let url = `{{ url('/api/leave-requests') }}/${id}/${role}-${action}`;
+        let url = `{{ url('/api/admin/leave-requests') }}/${id}/${role}-${action}`;
 
         fetch(url, {
             method: "PATCH",
             headers: {
                 "X-CSRF-TOKEN": csrfToken,
                 "Accept": "application/json",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                'token': localStorage.getItem('token'),
+                'auth-id': localStorage.getItem('auth-id')
             },
             body: JSON.stringify({})
         })

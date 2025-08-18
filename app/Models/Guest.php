@@ -4,10 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable; // ✅ this is important
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens; 
 
-class Guest extends Model
+class Guest extends Authenticatable
 {
-    use HasFactory;
+    use HasApiTokens, HasFactory, Notifiable; 
 
     protected $fillable = [
         'name',
@@ -31,6 +34,14 @@ class Guest extends Model
         'days',
         'admin_remarks'
     ];
+    
+    protected $hidden = [
+    'created_at',
+    'updated_at',
+    'remember_token',
+    // add other sensitive or recursive fields
+    ];
+
 
     public function accessory()
     {
@@ -43,7 +54,6 @@ class Guest extends Model
             ->with('accessoryHead');
     }
 
-    // app/Models/Guest.php
 
     public function feeException()
     {

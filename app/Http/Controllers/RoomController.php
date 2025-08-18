@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Room;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Log; // Import Log facade
+// use AWS\CRT\Log;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class RoomController extends Controller
@@ -14,6 +16,7 @@ class RoomController extends Controller
      */
     public function store(Request $request)
     {
+        try {
         $validated = $request->validate([
             'room_number' => [
                 'required',
@@ -28,10 +31,11 @@ class RoomController extends Controller
             ],
             'building_id' => 'required|exists:buildings,id',
             'floor_no' => 'required|integer|min:1',
-            'status' => 'required|in:available,occupied,maintenance',
+            
         ]);
 
-        try {
+        $validated['status'] = $request->input('status', 'available'); // Default to 'available' if not provided
+
             $room = Room::create($validated);
 
             return response()->json([
@@ -56,8 +60,18 @@ class RoomController extends Controller
     public function index()
     {
         try {
-            $rooms = Room::all();
-
+            // $rooms = Room::all();
+            $rooms = Room::with('building')->get(); // Eager load the building relationship
+            $rooms->transform(function ($room) {
+                return [
+                    'id' => $room->id,
+                    'room_number' => $room->room_number,
+                    'building_id' => $room->building_id,
+                    'building_name' => $room->building ? $room->building->name : 'Unknown',
+                    'floor_no' => $room->floor_no,
+                    'status' => $room->status,
+                ];
+            });
             if ($rooms->isEmpty()) {
                 return response()->json([
                     'success' => false,
@@ -123,7 +137,7 @@ class RoomController extends Controller
             $room = Room::findOrFail($id);
 
             $validated = $request->validate([
-                'room_number' => 'sometimes|required|unique:rooms,room_number,' . $id,
+                'room_number' => 'sometimes|required|unique:rooms,room_number,' . $room->id . ',id,building_id,' . $room->building_id,
                 'building_id' => 'sometimes|required|exists:buildings,id',
                 'floor_no' => 'sometimes|required|integer|min:1',
                 'status' => 'sometimes|required|in:available,occupied,maintenance',

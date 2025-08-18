@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Exception;
+use App\Helpers\Helper;
 
 class AccessoryHeadController extends Controller
 {
@@ -25,9 +26,10 @@ class AccessoryHeadController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|unique:accessory_heads,name',
-            'created_by' => 'nullable|integer',
+            'name' => 'required|string|unique:accessory_heads,name'
         ]);
+
+        $user = Helper::get_auth_admin_user($request);
 
         if ($validator->fails()) {
             return $this->apiResponse(false, 'Validation failed.', null, 422, $validator->errors());
@@ -36,7 +38,7 @@ class AccessoryHeadController extends Controller
         try {
             $accessoryHead = AccessoryHead::create([
                 'name' => $request->name,
-                'created_by' => $request->created_by,
+                'created_by' => $user->id,
             ]);
 
             return $this->apiResponse(true, 'Accessory head added successfully.', $accessoryHead, 201);
@@ -51,20 +53,19 @@ class AccessoryHeadController extends Controller
     public function update(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|unique:accessory_heads,name,' . $id,
-            'created_by' => 'nullable|integer',
+            'name' => 'required|string|unique:accessory_heads,name,' . $id
         ]);
 
         if ($validator->fails()) {
             return $this->apiResponse(false, 'Validation failed.', null, 422, $validator->errors());
         }
-
+        $user = Helper::get_auth_admin_user($request);
         try {
             $accessoryHead = AccessoryHead::findOrFail($id);
 
             $accessoryHead->update([
                 'name' => $request->name,
-                'created_by' => $request->created_by,
+                'updated_by' => $user->id,
             ]);
 
             return $this->apiResponse(true, 'Accessory head updated successfully.', $accessoryHead);

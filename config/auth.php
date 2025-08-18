@@ -45,6 +45,19 @@ return [
             'driver' => 'session',
             'provider' => 'residents',
         ],
+        'api' => [
+            'driver' => 'sanctum', // ✅ Use sanctum for token-based API
+            'provider' => 'users',
+        ],
+        'guest-api' => [
+            'driver' => 'sanctum',
+            'provider' => 'guests',
+        ],
+
+        'guest' => [
+            'driver' => 'session',
+            'provider' => 'guests',
+        ],
     ],
 
 
@@ -75,6 +88,11 @@ return [
         'residents' => [
             'driver' => 'eloquent',
             'model' => App\Models\Resident::class, // Change this to your Resident model
+        ],
+
+        'guests' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Guest::class,
         ],
     ],
 

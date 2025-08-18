@@ -59,10 +59,18 @@ document.addEventListener("DOMContentLoaded", function () {
     fetchPendingPayments();
 
     function fetchPendingPayments() {
-        const apiUrl = "{{ url('/api/allPendingPayments') }}";
+        const apiUrl = "{{ url('/api/admin/allPendingPayments') }}";
         const tableBody = document.getElementById("pendingPaymentsTable").querySelector("tbody");
 
-        fetch(apiUrl)
+        fetch(apiUrl, {
+            method: "GET",
+            headers: {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                'token': localStorage.getItem('token'),
+                'auth-id': localStorage.getItem('auth-id')
+            }
+        })
             .then(response => {
                 if (!response.ok) {
                     // If the response is not OK, try to parse it as JSON to get the message

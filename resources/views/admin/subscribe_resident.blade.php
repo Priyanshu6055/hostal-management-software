@@ -73,7 +73,15 @@
 
         try {
             // Fetch residents
-            const residentRes = await fetch("{{ url('/api/residents') }}");
+            const residentRes = await fetch("{{ url('/api/admin/residents') }}", {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'token': localStorage.getItem('token'),
+                    'auth-id': localStorage.getItem('auth-id')
+                }
+            });
             const residentData = await residentRes.json();
             if (!Array.isArray(residentData.data)) throw new Error('Invalid residents data format.');
 
@@ -129,6 +137,8 @@
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
+                        'token': localStorage.getItem('token'),
+                        'auth-id': localStorage.getItem('auth-id')
                     },
                     body: JSON.stringify(formData)
                 });

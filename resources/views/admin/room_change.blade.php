@@ -73,7 +73,16 @@ document.addEventListener("DOMContentLoaded", function () {
     fetchRoomChangeRequests();
 
     function fetchRoomChangeRequests() {
-        fetch(`{{ url('/api/room-change/requests') }}`)
+        fetch(`{{ url('/api/admin/room-change/requests') }}`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'token': localStorage.getItem('token'),
+                'auth-id': localStorage.getItem('auth-id')
+            }
+        }
+        )
             .then(res => {
                 if (!res.ok) {
                     return res.text().then(text => {
@@ -196,7 +205,16 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function fetchMessages(requestId) {
-        fetch(`{{ url('/api/room-change/messages') }}/${requestId}`)
+        fetch(`{{ url('/api/admin/room-change/all-messages') }}/${requestId}`, {  
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'token': localStorage.getItem('token'),
+                'auth-id': localStorage.getItem('auth-id')
+            }
+        }
+        )
             .then(res => {
                 if (!res.ok) {
                     return res.text().then(text => {
@@ -247,12 +265,14 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        fetch(`{{ url('/api/room-change/message') }}/${requestId}`, {
+        fetch(`{{ url('/api/admin/room-change/message') }}/${requestId}`, {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute("content"),
                 'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'token': localStorage.getItem('token'),
+                'auth-id': localStorage.getItem('auth-id')
             },
             body: JSON.stringify({
                 message: message,
@@ -289,12 +309,14 @@ document.addEventListener("DOMContentLoaded", function () {
             remark: 'Denied by admin'
         };
 
-        fetch(`{{ url('/api/room-change/deny') }}/${requestId}`, {
+        fetch(`{{ url('/api/admin/room-change/deny') }}/${requestId}`, {
             method: 'PUT',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute("content"),
                 'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'token': localStorage.getItem('token'),
+                'auth-id': localStorage.getItem('auth-id')
             },
             body: JSON.stringify(requestBody)
         })
@@ -394,7 +416,15 @@ $(document).ready(function() {
 
     function fetchBuildingsForModal() {
         showCustomMessageBox("Loading buildings...", 'info', 'assignBedModalMessage');
-        fetch('/api/buildings')
+        fetch('/api/admin/buildings', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'token': localStorage.getItem('token'),
+                'auth-id': localStorage.getItem('auth-id')
+            }
+        })
             .then(response => {
                 if (!response.ok) {
                     return response.text().then(text => {
@@ -436,7 +466,15 @@ $(document).ready(function() {
 
         if (buildingId) {
             showCustomMessageBox("Loading rooms...", 'info', 'assignBedModalMessage');
-            fetch(`/api/buildings/${buildingId}/rooms`)
+            fetch(`/api/admin/buildings/${buildingId}/rooms`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',     
+                    'token': localStorage.getItem('token'),
+                    'auth-id': localStorage.getItem('auth-id')
+                }
+            })
                 .then(res => {
                     if (!res.ok) {
                         return res.text().then(text => {
@@ -480,7 +518,15 @@ $(document).ready(function() {
 
         if (roomId) {
             showCustomMessageBox("Loading available beds...", 'info', 'assignBedModalMessage');
-            fetch(`/api/rooms/${roomId}/available-beds`)
+            fetch(`/api/admin/rooms/${roomId}/available-beds`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'token': localStorage.getItem('token'),
+                    'auth-id': localStorage.getItem('auth-id'),
+                }
+            })
                 .then(res => {
                     if (!res.ok) {
                         return res.text().then(text => {
@@ -530,12 +576,14 @@ $(document).ready(function() {
         }
 
         $.ajax({
-            url: `{{ url('/api/room-change/final-approval') }}/${currentRoomChangeRequestId}`,
+            url: `{{ url('/api/admin/room-change/final-approval') }}/${currentRoomChangeRequestId}`,
             type: 'POST',
             headers: {
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
                 'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'token': localStorage.getItem('token'),
+                'auth-id': localStorage.getItem('auth-id')  
             },
             data: JSON.stringify({
                 new_bed_id: newBedId,

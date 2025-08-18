@@ -5,15 +5,25 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\Guest;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\Apis\V1\LoginController as ApiLogin;
 
 class LoginController extends Controller
 {
+    protected $APILoginRef;
+
+    public function __construct() {
+        $this->APILoginRef = new APILogin;
+    }
+
+
     public function showLoginForm()
     {
         return view('auth.login');
     }
-    
+
+
 
     public function login(Request $request)
     {
@@ -50,4 +60,5 @@ class LoginController extends Controller
         $request->session()->regenerateToken();
         return redirect('/login');
     }
+
 }

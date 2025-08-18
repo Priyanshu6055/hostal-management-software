@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-
+use App\Helpers\Helper;
 use App\Models\Bed;
 use App\Models\Payment;
 use App\Models\Checkout;
@@ -12,18 +12,24 @@ use App\Models\GuestAccessory;
 use App\Models\AccessoryCheckoutLog;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class CheckoutController extends Controller
 {
     public function requestCheckout(Request $request)
     {
         try {
+            $user_id = $request->header('auth-id');
+            $request["resident_id"]= Helper::get_resident_details($user_id)->id; // Resident ID from header
+            $request['date'] = Carbon::createFromFormat('d-m-Y', $request->date)->format('Y-m-d');
+
             $validator = Validator::make($request->all(), [
                 'resident_id' => 'required|exists:residents,id',
                 'date' => 'required|date',
                 'reason' => 'required|string',
             ]);
-
+            
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
@@ -34,7 +40,6 @@ class CheckoutController extends Controller
             }
 
             $validated = $validator->validated();
-
             $cautionAmount = Payment::where('resident_id', $validated['resident_id'])
                 ->where('is_caution_money', true)
                 ->sum('amount');
@@ -64,9 +69,11 @@ class CheckoutController extends Controller
     }
 
 
-    public function getCheckoutStatus($resident_id)
+    public function getCheckoutStatus(Request $request)
     {
         try {
+            $user_id = $request->header('auth-id');
+            $resident_id= Helper::get_resident_details($user_id)->id; // Resident ID from header
             $checkout = Checkout::where('resident_id', $resident_id)->latest()->first();
 
             if (!$checkout) {
@@ -324,6 +331,51 @@ class CheckoutController extends Controller
         }
     }
 
+    public function getAccessoryByResidentId($residentId)
+    {
+        try {
+            $resident = Resident::findOrFail($residentId);
+            $guestId = $resident->id;
+
+            $accessories = GuestAccessory::with('accessoryHead')
+                ->where('guest_id', $guestId)
+                ->get();
+
+            $checkout = Checkout::where('resident_id', $residentId)
+                ->latest()
+                ->first();
+
+            $depositedAmount = $checkout ? $checkout->deposited_amount : 0;
+
+            if ($accessories->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No accessories found for this resident.',
+                    'data' => ['deposited_amount' => $depositedAmount],
+                    'errors' => null,
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Default accessories fetched successfully.',
+                'data' => [
+                    'deposited_amount' => $depositedAmount,
+                    'accessories' => $accessories,
+                ],
+                'errors' => null,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch default accessories or deposited amount.',
+                'data' => null,
+                'errors' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
 
     public function adminAccessoryChecking(Request $request, $residentId)
     {
@@ -402,10 +454,11 @@ class CheckoutController extends Controller
     }
 
 
-    public function getCheckoutLogs($residentId)
+    public function getCheckoutLogs(Request $request)
     {
         try {
-            $resident = Resident::findOrFail($residentId);
+            $user_id = $request->header('auth-id');
+            $residentId = Helper::get_resident_details($user_id)->id; // Resident ID from header            
 
             $checkout = Checkout::where('resident_id', $residentId)->latest()->first();
 
@@ -447,4 +500,50 @@ class CheckoutController extends Controller
             ], 500);
         }
     }
+
+    public function adminGetCheckoutLogs(Request $request, $residentId)
+    {
+        try {
+            $checkout = Checkout::where('resident_id', $residentId)->latest()->first();
+
+            if (!$checkout) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No checkout record found for this resident.',
+                    'data' => null,
+                    'errors' => null,
+                ], 404);
+            }
+
+            $logs = AccessoryCheckoutLog::with('accessory')
+                ->where('checkout_id', $checkout->id)
+                ->get()
+                ->map(function ($log) {
+                    return [
+                        'accessory_head_id' => $log->accessory_head_id,
+                        'accessory_name' => $log->accessory->name ?? null,
+                        'is_returned' => $log->is_returned,
+                        'debit_amount' => $log->debit_amount,
+                        'remark' => $log->remark,
+                        'logged_at' => $log->created_at->toDateTimeString(),
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Checkout logs fetched successfully.',
+                'data' => $logs,
+                'errors' => null,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch checkout logs.',
+                'data' => null,
+                'errors' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }
+
+

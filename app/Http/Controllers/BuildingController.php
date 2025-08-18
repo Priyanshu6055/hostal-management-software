@@ -5,11 +5,13 @@ namespace App\Http\Controllers;
 
 
 use App\Models\Building;
+use App\Helpers\Helper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 class BuildingController extends Controller
 {
@@ -39,15 +41,22 @@ class BuildingController extends Controller
     // ✅ Create a new building
     public function store(Request $request)
     {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'building_code' => 'required|string|unique:buildings,building_code',
+            'floors' => 'required|integer|min:1',
+        ]);
         try {
+            $user = Helper::get_auth_admin_user($request);
+            
             $validatedData = $request->validate([
                 'name' => 'required|string',
                 'building_code' => 'required|string|unique:buildings,building_code',
-                'university_id' => 'required|exists:universities,id',
-                'status' => 'required|in:active,inactive',
                 'floors' => 'required|integer|min:1',
-                'created_by' => 'required|exists:users,id',
             ]);
+            $validatedData["university_id"] = $user->university_id;
+            $validatedData["status"] ="active"; // Default status
+            $validatedData["created_by"] = $user->id;
 
             $building = Building::create($validatedData);
 
@@ -92,10 +101,11 @@ class BuildingController extends Controller
                     'string',
                     Rule::unique('buildings', 'building_code')->ignore($id),
                 ],
-                'university_id' => 'sometimes|required|exists:universities,id',
+                // 'university_id' => 'sometimes|required|exists:universities,id',
                 'status' => 'sometimes|required|in:active,inactive',
                 'floors' => 'sometimes|required|integer|min:1',
             ]);
+            // $validatedData['university_id'] = Helper::get_auth_admin_user($request)->university_id;
 
             $building->update($validatedData);
 

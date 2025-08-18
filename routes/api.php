@@ -40,6 +40,7 @@ use App\Http\Controllers\FeeExceptionController;
 use App\Notifications\CustomAppNotification;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\Apis\V1\LoginController;
 
 
 
@@ -56,9 +57,9 @@ use App\Http\Controllers\NotificationController;
 
 
 
-Route::middleware(['auth:sanctum'])->get('/admin-dashboard', function () {
-    return response()->json(['message' => 'Welcome Admin']);
-});
+// Route::middleware(['auth:sanctum'])->get('/admin-dashboard', function () {
+//     return response()->json(['message' => 'Welcome Admin']);
+// });
 
 
 
@@ -69,86 +70,184 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
+// Guest Routes 
+Route::post('/guests', [GuestController::class, 'register']); // Guest registers
+Route::post('/guest/login', [LoginController::class, 'guestLogin'])->name('guest.guest_login');
 
+//Guest API Auth
+Route::middleware(['guest_api_auth'])->group(function(){
+    Route::get('/guest/approved-rejected-guest', [GuestController::class, 'getApprovedOrRejectedGuests']);    
+    Route::get('/guest/{id}/total-amount', [GuestController::class, 'getGuestTotalAmount']);
+    Route::get('/guests/paid', [GuestController::class, 'getPaidGuests']);
+    Route::get('/guests/pending', [GuestController::class, 'pendingGuests']);
 
-Route::post('/create-admin', [SuperAdminController::class, 'createAdmin']);
-Route::get('/admins', [SuperAdminController::class, 'getAdmins']);
-Route::get('/admins/{id}', [SuperAdminController::class, 'getAdmin']);
-Route::put('/admins/{id}', [SuperAdminController::class, 'updateAdmin']);
-Route::delete('/admins/{id}', [SuperAdminController::class, 'deleteAdmin']);
-
-
-
-Route::post('/universities', [UniversityController::class, 'store']);
-Route::get('/universities', [UniversityController::class, 'index']);
-Route::put('/universities/{id}', [UniversityController::class, 'update']);
-
-
-// Route::apiResource('rooms', RoomController::class);
-Route::get('/rooms', [RoomController::class, 'index']); // Get all rooms
-Route::get('/rooms/{id}', [RoomController::class, 'show']); // Get single room
-Route::post('/rooms', [RoomController::class, 'store']); // Create room
-Route::put('/rooms/{id}', [RoomController::class, 'update']); // Update room
-Route::delete('/rooms/{id}', [RoomController::class, 'destroy']); // Delete room
-Route::get('/buildings/{id}/rooms', [RoomController::class, 'getRooms']);
-
-
-// Route::apiResource('beds', BedController::class);
-Route::get('/beds', [BedController::class, 'index']); // Get all beds
-Route::get('/beds/{id}', [BedController::class, 'show']); // Get single bed
-Route::post('/beds', [BedController::class, 'store']); // Create bed
-Route::put('/beds/{id}', [BedController::class, 'update']); // Update bed
-Route::delete('/beds/{id}', [BedController::class, 'destroy']); // Delete bed
-Route::get('/rooms/{room_id}/available-beds', [BedController::class, 'getAvailableBeds']);
-
-
-
-Route::post('/buildings', [BuildingController::class, 'store']);
-Route::get('/buildings', [BuildingController::class, 'index']); // Get all buildings
-Route::get('/buildings/{id}', [BuildingController::class, 'show']); // Get single building
-Route::put('/buildings/{id}', [BuildingController::class, 'update']); // Update building
-Route::delete('/buildings/{id}', [BuildingController::class, 'destroy']); // Delete building
-
-
-Route::post('/staff', [StaffController::class, 'createStaff']);
-Route::get('/get/staff', [StaffController::class, 'getAllStaff']);
-Route::put('/staff/{id}', [StaffController::class, 'updateStaff']);
-
-
-
-// Acccessories
-Route::put('/accessories/{id}', [AccessoryController::class, 'update']);
-Route::post('/resident/{resident_id}/accessories', [StudentAccessoryController::class, 'addAccessory']);
-Route::get('/resident/{resident_id}/accessories', [PaymentController::class, 'getAccessoryPendingPayments']);
-Route::post('/residents/{resident_id}/accessories/{accessory_id}/pay', [StudentAccessoryController::class, 'payAccessory']);
-Route::post('/admin-send-accessory', [StudentAccessoryController::class, 'adminSendAccessoryToResident']);
-Route::get('/accessories/active', [AccessoryController::class, 'getActiveAccessories']);
-Route::get('/default/accessories/{resident_id}', [CheckoutController::class, 'getDefaultAccessoryByResidentId']);
-Route::get('/accessories', [AccessoryController::class, 'getAllAccessories']);
-Route::put('/admin/accessory/checking/{residentId}', [CheckoutController::class, 'adminAccessoryChecking']);
-
-
-
-//Accessory head 
-Route::prefix('accessory-heads')->group(function () {
-    Route::post('/add', [AccessoryHeadController::class, 'store']);
-    Route::post('/update', [AccessoryHeadController::class, 'update']); // No PUT, use POST
-    Route::get('/', [AccessoryHeadController::class, 'index']);
+    Route::post('guests/guest-payments', [PaymentController::class, 'guestPayment']); // Guest makes payment
 });
 
-Route::post('/create-or-update-accessories', [AccessoryController::class, 'createOrUpdate']);
+    Route::post('admin/login', [LoginController::class, 'adminLogin']);
+    Route::post('authenticate-users', [LoginController::class, 'AuthenticateUsers']);
+    Route::post('logout', [LoginController::class, 'logout']);
 
-// leave request APIs
-Route::post('/residents/{resident_id}/leave', [LeaveRequestController::class, 'store']);
-Route::patch('/leave-requests/{id}/hod-approve', [LeaveRequestController::class, 'hodApprove']);
-Route::patch('/leave-requests/{id}/hod-deny', [LeaveRequestController::class, 'hodDeny']);
-Route::get('/leave-requests', [LeaveRequestController::class, 'index']);
-Route::patch('/leave-requests/{id}/admin-approve', [LeaveRequestController::class, 'adminApprove']);
-Route::patch('/leave-requests/{id}/admin-deny', [LeaveRequestController::class, 'adminDeny']);
-Route::get('/residents/{residentId}/leave-requests', [LeaveRequestController::class, 'leaveReqById']);
+Route::middleware(['admin_api_auth'])->group(function(){
+
+    Route::get('admin/buildings', [BuildingController::class, 'index']); // Get all buildings
+    Route::post('admin/buildings/create', [BuildingController::class, 'store']);
+    Route::get('admin/buildings/{id}', [BuildingController::class, 'show']); // Get single building
+    Route::put('admin/buildings/{id}', [BuildingController::class, 'update']); // Update building
+    Route::delete('admin/buildings/{id}', [BuildingController::class, 'destroy']); // Delete building
+
+    // Route::apiResource('rooms', RoomController::class);
+    Route::get('admin/buildings/{id}/rooms', [RoomController::class, 'getRooms']); //Total Rooms status of a building
+    Route::get('admin/rooms', [RoomController::class, 'index']); // Get all rooms from all buildings
+    Route::get('admin/rooms/{id}', [RoomController::class, 'show']); // Get single room
+    Route::post('admin/rooms/create', [RoomController::class, 'store']); // Create room
+    Route::put('admin/rooms/{id}', [RoomController::class, 'update']); // Update room
+    Route::delete('admin/rooms/{id}', [RoomController::class, 'destroy']); // Delete room
+
+    // Route::get('/admin/check-rooms', [AdminController::class, 'checkAvailableRooms']); // Check available rooms
+
+    // Route::apiResource('beds', BedController::class);
+    Route::get('admin/beds', [BedController::class, 'index']); // Get all beds
+    Route::get('admin/beds/{id}', [BedController::class, 'show']); // Get single bed
+    Route::post('admin/beds/create', [BedController::class, 'store']); // Create bed
+    Route::put('admin/beds/update/{id}', [BedController::class, 'update']); // Update bed
+    Route::delete('admin/beds/{id}', [BedController::class, 'destroy']); // Delete bed
+    Route::get('admin/rooms/{room_id}/available-beds', [BedController::class, 'getAvailableBeds']);
+
+    //FETCH RESIDENTS
+    Route::get('admin/residents', [ResidentController::class, 'getAllResidents']);
+    Route::get('admin/residents/unassigned', [ResidentController::class, 'getUnassignedResidents']);
+    Route::get('admin/residents/{id}', [ResidentController::class, 'getResidentById']);
+    Route::post('/admin/assign-bed', [ResidentController::class, 'assignBed']); // Assign bed to resident
+
+    //For Guests Apis
+    Route::get('/admin/guests/pending', [GuestController::class, 'pendingGuestsForAccountant']);
+    Route::get('/admin/guests/status', [GuestController::class, 'guestsStatus']);
+    Route::post('/admin/approve-guest', [AdminController::class, 'guestApproval']); // Send payment request
+
+    //For Waiver Guests
+    // Route::post('/admin/approved-waiver', [FeeExceptionController::class, 'adminWaiverApproved']); // Send payment request
+    Route::post('/admin/modify-waiver/payments', [FeeExceptionController::class, 'store']); // Send payment request
+    Route::post('/admin/reject-waiver', [FeeExceptionController::class, 'waiverRejected']); // Send payment request
+
+    Route::get('/admin/allPendingPayments', [PaymentController::class, 'getAllPendingPayments']);
+
+    // Acccessories
+    Route::get('admin/accessories', [AccessoryController::class, 'getAllAccessories']);
+    Route::post('admin/accessories/create-or-update', [AccessoryController::class, 'createOrUpdate']);
+    // Route::put('admin/accessories/{id}', [AccessoryController::class, 'update']);
+    Route::post('admin/assign-accessories', [StudentAccessoryController::class, 'adminSendAccessoryToResident']);
+    Route::get('admin/accessories/active', [AccessoryController::class, 'getActiveAccessories']);
+    Route::get('admin/accessories/{resident_id}', [CheckoutController::class, 'getAccessoryByResidentId']);
+    // Route::get('admin/default/accessories/{resident_id}', [CheckoutController::class, 'getDefaultAccessoryByResidentId']);
 
 
-Route::post('/residents', [AdminController::class, 'createResident']);
+
+    //Accessory head 
+    Route::prefix('admin/accessories-master')->group(function () {
+        Route::post('/add', [AccessoryHeadController::class, 'store']);
+        Route::post('/update/{id}', [AccessoryHeadController::class, 'update']); // No PUT, use POST
+        Route::get('/', [AccessoryHeadController::class, 'index']);
+    });
+
+
+    Route::post('admin/staff/create', [StaffController::class, 'createStaff']);
+    Route::get('admin/staff-list', [StaffController::class, 'getAllStaff']);
+    Route::get('admin/staff/{id}', [StaffController::class, 'getStaffDetails']);
+    Route::put('admin/staff/update/{id}', [StaffController::class, 'updateStaff']);
+
+    // Admin fetches all room change requests
+    Route::get('admin/room-change/requests', [RoomChangeController::class, 'getAllRoomChangeRequests']);
+    // Route::get('admin/room-change/requests', [RoomChangeController::class, 'getAllRequests']);
+
+    // Admin responds with available/not available + optional remark
+    Route::post('admin/room-change/respond/{request_id}', [RoomChangeController::class, 'respondToRequest']);
+    // Send a message in the conversation
+    Route::post('admin/room-change/message/{request_id}', [RoomChangeMessageController::class, 'sendMessage']);
+    // Fetch all messages in a conversation
+    Route::get('admin/room-change/all-messages/{request_id}', [RoomChangeMessageController::class, 'getMessages']);
+
+    // ➡️ Final Approval by Admin when resident has agreed
+    Route::post('admin/room-change/final-approval/{request_id}', [RoomChangeController::class, 'finalApproval']);
+    Route::put('admin/room-change/deny/{request_id}', [RoomChangeController::class, 'denyRoomChangeByAdmin']);
+
+    //Checkout Process
+    Route::put('admin/accessory/checking/{residentId}', [CheckoutController::class, 'adminAccessoryChecking']);
+    Route::put('admin/checkout/admin-approval/{id}', [CheckoutController::class, 'adminApproval']); // Admin final approval
+    Route::get('admin/resident/all-checkout-requests', [CheckoutController::class, 'getAllCheckoutRequests']);
+    Route::get('admin/resident-checkout-logs/{residentId}', [CheckoutController::class, 'adminGetCheckoutLogs']);
+
+    // leave request APIs
+    Route::post('admin/residents/{resident_id}/leave', [LeaveRequestController::class, 'store']);
+    Route::patch('admin/leave-requests/{id}/hod-approve', [LeaveRequestController::class, 'hodApprove']);
+    Route::patch('admin/leave-requests/{id}/hod-deny', [LeaveRequestController::class, 'hodDeny']);
+    Route::get('admin/leave-requests', [LeaveRequestController::class, 'index']);
+    Route::patch('admin/leave-requests/{id}/admin-approve', [LeaveRequestController::class, 'adminApprove']);
+    Route::patch('admin/leave-requests/{id}/admin-deny', [LeaveRequestController::class, 'adminDeny']);
+    Route::get('admin/residents/{residentId}/leave-requests', [LeaveRequestController::class, 'leaveReqById']);
+
+
+
+    // Admin Created Resident
+    Route::post('admin/residents/create', [AdminController::class, 'createResident']);
+
+
+    // Accountant Routes
+    Route::put('accountant/checkout/account-approval/{id}', [CheckoutController::class, 'accountApproval']); // Accounts approval
+    Route::post('accountant/update-guest-status', [FeeExceptionController::class, 'updateGuestStatusWithRemark']);
+
+
+    //Super Admin Routes    
+    Route::post('admin/universities/create', [UniversityController::class, 'store']);
+    Route::get('admin/universities', [UniversityController::class, 'index']);
+    Route::put('admin/universities/{id}', [UniversityController::class, 'update']);
+
+    Route::post('admin/create-admin', [SuperAdminController::class, 'createAdmin']);
+    Route::get('admin/admins', [SuperAdminController::class, 'getAdmins']);
+    Route::get('admin/admins/{id}', [SuperAdminController::class, 'getAdmin']);
+    Route::put('admin/admins/{id}', [SuperAdminController::class, 'updateAdmin']);
+    // Route::delete('admin/admins/{id}', [SuperAdminController::class, 'deleteAdmin']);
+
+
+    //Resident Routes
+    // Resident requests room change
+    Route::post('resident/room-change/request/{resident_id}', [RoomChangeController::class, 'requestRoomChange']);
+    // Resident fetches their room change requests
+    Route::get('resident/room-change/requests', [RoomChangeController::class, 'getRoomChangeRequests']);
+    Route::get('resident/room-change/requests/{id}', [RoomChangeController::class, 'getRoomChangeRequestsById']);
+    Route::get('/resident/{residentId}/room-change-requests', [RoomChangeController::class, 'getRoomChangeRequestsByResidentId']);
+    //Accessory Routes
+    Route::post('resident/{resident_id}/accessories', [StudentAccessoryController::class, 'addAccessory']); // Resident Add Accessory
+    Route::get('resident/{resident_id}/accessories', [PaymentController::class, 'getAccessoryPendingPayments']);
+    Route::post('resident/{resident_id}/accessories/{accessory_id}/pay', [StudentAccessoryController::class, 'payAccessory']);
+
+    Route::post('resident/checkout/request', [CheckoutController::class, 'requestCheckout']);
+    Route::get('resident/checkout-status', [CheckoutController::class, 'getCheckoutStatus']);
+    Route::get('resident/checkout-logs', [CheckoutController::class, 'getCheckoutLogs']);
+
+
+
+
+
+
+
+
+
+// Resident respond 
+Route::post('/room-change/respond-to-admin/{request_id}', [RoomChangeController::class, 'respondToAdmin']);
+
+// Resident sends agree/deny
+Route::post('/room-change/confirm-by-resident/{request_id}', [RoomChangeController::class, 'confirmRoomChange']);
+
+
+});
+
+
+    Route::get('/accountant/guests/pending', [GuestController::class, 'pendingGuestsForAccountant']);
+
+
+
+
 
 
 Route::post('/feedbacks/{resident_id}', [FeedbackController::class, 'store']);  // Submit Feedback
@@ -163,42 +262,6 @@ Route::put('/notices/{id}', [NoticeController::class, 'update']); // Update Noti
 Route::delete('/notices/{id}', [NoticeController::class, 'destroy']); // Delete Notice
 
 
-
-// Resident requests room change
-Route::post('/room-change/request/{resident_id}', [RoomChangeController::class, 'requestRoomChange']);
-
-// Admin fetches all room change requests
-Route::get('/room-change/requests', [RoomChangeController::class, 'getAllRequests']);
-
-// Resident fetches their room change requests
-Route::get('/room-change-requests/{id}', [RoomChangeController::class, 'getRoomChangeRequestById']);
-
-Route::get('/resident/{residentId}/room-change-requests', [RoomChangeController::class, 'getRoomChangeRequestsByResidentId']);
-
-// Admin responds with available/not available + optional remark
-Route::post('/room-change/respond/{request_id}', [RoomChangeController::class, 'respondToRequest']);
-
-// Resident respond 
-Route::post('/room-change/respond-to-admin/{request_id}', [RoomChangeController::class, 'respondToAdmin']);
-
-// Resident sends agree/deny
-Route::post('/room-change/confirm-by-resident/{request_id}', [RoomChangeController::class, 'confirmRoomChange']);
-
-// ➡️ New: Chat Communication (RoomChangeMessageController)
-
-// Send a message in the conversation
-Route::post('/room-change/message/{request_id}', [RoomChangeMessageController::class, 'sendMessage']);
-
-// Fetch all messages in a conversation
-Route::get('/room-change/messages/{request_id}', [RoomChangeMessageController::class, 'getMessages']);
-
-// ➡️ Final Approval by Admin when resident has agreed
-Route::post('/room-change/final-approval/{request_id}', [RoomChangeController::class, 'finalApproval']);
-
-
-Route::put('/room-change/deny/{request_id}', [RoomChangeController::class, 'denyRoomChangeByAdmin']);
-
-Route::get('/room-change/requests', [RoomChangeController::class, 'getAllRoomChangeRequests']);
 
 
 
@@ -225,40 +288,6 @@ Route::prefix('grievances')->group(function () {
     Route::get('/resident/{resident_id}', [GrievanceController::class, 'getGrievancesByResident']);
 });
 
-Route::post('/checkout/request', [CheckoutController::class, 'requestCheckout']);
-Route::put('/checkout/account-approval/{id}', [CheckoutController::class, 'accountApproval']); // Accounts approval
-Route::put('/checkout/admin-approval/{id}', [CheckoutController::class, 'adminApproval']); // Admin final approval
-Route::get('/resident/{resident_id}/checkout-status', [CheckoutController::class, 'getCheckoutStatus']);
-Route::get('/checkout-requests', [CheckoutController::class, 'getAllCheckoutRequests']);
-Route::get('/resident/all-checkout-requests', [CheckoutController::class, 'getAllCheckoutRequests']);
-Route::put('/admin/accessory/checking/{residentId}', [CheckoutController::class, 'adminAccessoryChecking']);
-Route::get('/resident-checkout-logs/{residentId}', [CheckoutController::class, 'getCheckoutLogs']);
-
-
-
-// Guest Routes 
-Route::post('/guests', [GuestController::class, 'register']); // Guest registers
-Route::get('/guests/pending', [GuestController::class, 'pendingGuests']);
-Route::get('/accountant/guests/pending', [GuestController::class, 'pendingGuestsForAccountant']);
-Route::get('/admin/check-rooms', [AdminController::class, 'checkAvailableRooms']); // Check available rooms
-Route::post('/admin/approved-guest', [AdminController::class, 'adminApproved']); // Send payment request
-Route::post('/admin/approved-waiver', [FeeExceptionController::class, 'adminWaiverApproved']); // Send payment request
-Route::post('/admin/modify-waiver/payments', [FeeExceptionController::class, 'store']); // Send payment request
-Route::post('/admin/reject-waiver', [FeeExceptionController::class, 'waiverRejected']); // Send payment request
-
-Route::post('/guest-payments', [PaymentController::class, 'guestPayment']); // Guest makes payment
-Route::post('/admin/assign-bed', [ResidentController::class, 'assignBed']); // Assign bed to resident
-Route::get('/guest/{id}/total-amount', [GuestController::class, 'getGuestTotalAmount']);
-
-
-
-//FETCH RESIDENTS
-Route::get('/residents', [ResidentController::class, 'getAllResidents']);
-Route::get('/residents/{id}', [ResidentController::class, 'getResidentById']);
-Route::get('/admin/residents/unassigned', [ResidentController::class, 'getUnassignedResidents']);
-
-
-
 Route::get('/fees', [FeeController::class, 'getAllFees']);
 Route::put('/fees/{id}', [FeeController::class, 'updateFeeById']);
 Route::post('/admin/add-fees', [FeeController::class, 'addOrUpdateFees']);
@@ -279,7 +308,6 @@ Route::put('/fee-heads/{id}', [FeeHeadController::class, 'update']);
 // Payment Routes
 Route::post('/resident/pay', [PaymentController::class, 'payAsResident']);
 Route::post('/payment/reject', [AdminController::class, 'rejectPaymentRequest']);
-Route::get('/aproved/rejected/guest', [GuestController::class, 'getApprovedOrRejectedGuests']);
 
 
 
@@ -318,7 +346,6 @@ Route::get('/subscription_payment', function () {
 })->name('resident.subscription.payment');
 
 
-Route::get('/allPendingPayments', [PaymentController::class, 'getAllPendingPayments']);
 
 
 Route::get('/get-payment-id', function (Request $request) {
@@ -342,7 +369,6 @@ Route::get('/get-payment-id', function (Request $request) {
 
 
 Route::get('/messes', [MessController::class, 'index']);
-Route::get('/guests/paid', [GuestController::class, 'getPaidGuests']);
 
 
 
@@ -421,15 +447,6 @@ Route::post('/send-mail', function (Request $request) {
     ]);
 });
 
-
-Route::post('/accountant/update-guest-status', [FeeExceptionController::class, 'updateGuestStatusWithRemark']);
-
-Route::get('/guest/{guest}/total-amount', [GuestController::class, 'getTotalAmount'])->middleware('auth:sanctum');
-
-
-Route::get('/guest/{guest}/fee-exception', [FeeExceptionController::class, 'showFeeException']);
-
-Route::get('/guest/{guest}/fee-exception-details', [FeeExceptionController::class, 'getFeeExceptionDetailsForEdit']);
 
 
 // Notification API Routes

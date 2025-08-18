@@ -9,7 +9,7 @@
             <div id="mainResponseMessage" class="mt-3"></div> {{-- Message container for the page --}}
 
             <div class="d-flex justify-content-end mb-3">
-                <a href="{{ route('admin.create_staff') }}" class="btn btn-primary">
+                <a href="/admin/staff/create" class="btn btn-primary">
                     <i class="fas fa-plus"></i> Create Staff
                 </a>
             </div>
@@ -62,7 +62,15 @@ document.addEventListener("DOMContentLoaded", function () {
     fetchStaff();
 
     function fetchStaff() {
-        fetch("{{ url('/api/get/staff') }}")
+        fetch("{{ url('/api/admin/staff-list') }}", {
+            method: "GET",
+            headers: {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                'token': localStorage.getItem('token'), // Include token for authentication
+                'auth-id': localStorage.getItem('auth-id') // Include auth-id for authorization
+            }
+        })
             .then(response => response.json())
             .then(response => { // Changed 'data' to 'response' for consistency
                 const staffList = document.querySelector("#staffList tbody");
@@ -82,24 +90,23 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 staffMembers.forEach((staff, index) => {
                     let roles = staff.roles && staff.roles.length > 0 ? staff.roles.map(role => role.name).join(', ') : 'N/A';
-                    let buildingName = staff.building?.name ?? 'N/A';
-
+                    let buildingName = staff.building&&staff.building.length > 0  ? staff.building.map(build => build.name).join(', ') : 'N/A';
+                    // console.log(staff.building.name);
                     let row = `
                         <tr data-id="${staff.id}">
                             <td>${index + 1}</td>
                             <td class="name">${staff.name || 'N/A'}</td>
                             <td class="email">${staff.email || 'N/A'}</td>
                             <td class="roles">${roles}</td>
-                            <td class="building-name">${buildingName}</td>
+                            <td class="building-name">${staff.building.name}</td>
                             <td>
-                                <button class="btn btn-sm btn-warning edit-btn">Edit</button>
+                                <a class="btn btn-sm btn-warning me-1" href="/admin/staff/edit/${staff.id}">Edit</a>
                             </td>
                         </tr>
                     `;
                     staffList.innerHTML += row;
                 });
 
-                attachEditListeners(allRoles);
                 if (response.message) {
                     showCustomMessageBox(response.message, 'success');
                 }
@@ -113,86 +120,92 @@ document.addEventListener("DOMContentLoaded", function () {
             });
     }
 
-    function attachEditListeners(allRoles) {
-        document.querySelectorAll(".edit-btn").forEach(button => {
-            button.addEventListener("click", function () {
-                const row = this.closest("tr");
-                const id = row.dataset.id;
+    // function attachEditListeners(allRoles) {
+    //     document.querySelectorAll(".edit-btn").forEach(button => {
+    //         button.addEventListener("click", function () {
+    //             const row = this.closest("tr");
+    //             const id = row.dataset.id;
 
-                const nameCell = row.querySelector(".name");
-                const emailCell = row.querySelector(".email");
-                const rolesCell = row.querySelector(".roles");
-                const buildingNameCell = row.querySelector(".building-name");
+    //             const nameCell = row.querySelector(".name");
+    //             const emailCell = row.querySelector(".email");
+    //             const rolesCell = row.querySelector(".roles");
+    //             const buildingNameCell = row.querySelector(".building-name");
 
-                if (this.textContent === "Edit") {
-                    nameCell.innerHTML = `<input type="text" class="form-control form-control-sm" value="${nameCell.textContent.trim()}">`;
-                    emailCell.innerHTML = `<input type="email" class="form-control form-control-sm" value="${emailCell.textContent.trim()}">`;
+    //             if (this.textContent === "Edit") {
+    //                 nameCell.innerHTML = `<input type="text" class="form-control form-control-sm" value="${nameCell.textContent.trim()}">`;
+    //                 emailCell.innerHTML = `<input type="email" class="form-control form-control-sm" value="${emailCell.textContent.trim()}">`;
 
-                    let currentRolesText = rolesCell.textContent.trim();
-                    let currentRolesArray = currentRolesText === 'N/A' ? [] : currentRolesText.split(', ').map(role => role.trim());
+    //                 let currentRolesText = rolesCell.textContent.trim();
+    //                 let currentRolesArray = currentRolesText === 'N/A' ? [] : currentRolesText.split(', ').map(role => role.trim());
 
-                    let roleOptions = allRoles.map(role => {
-                        return `<option value="${role}" ${currentRolesArray.includes(role) ? 'selected' : ''}>${role.charAt(0).toUpperCase() + role.slice(1)}</option>`;
-                    }).join('');
-                    rolesCell.innerHTML = `<select class="form-select form-select-sm">${roleOptions}</select>`;
+    //                 let roleOptions = allRoles.map(role => {
+    //                     return `<option value="${role}" ${currentRolesArray.includes(role) ? 'selected' : ''}>${role.charAt(0).toUpperCase() + role.slice(1)}</option>`;
+    //                 }).join('');
+    //                 let buildingOptions = allRoles.map(role => {
+    //                     return `<option value="${role}" ${currentRolesArray.includes(role) ? 'selected' : ''}>${role.charAt(0).toUpperCase() + role.slice(1)}</option>`;
+    //                 }).join('');
 
-                    buildingNameCell.innerHTML = `<input type="text" class="form-control form-control-sm" value="${buildingNameCell.textContent.trim()}">`;
+    //                 rolesCell.innerHTML = `<select class="form-select form-select-sm">${roleOptions}</select>`;
+    //                 buildingNameCell.innerHTML = `<select class="form-control form-control-sm">${buildingNameCell}<select>`;
+    //               //  buildingNameCell.innerHTML = `<input type="text" class="form-control form-control-sm" value="${buildingNameCell.textContent.trim()}">`;
 
-                    this.textContent = "Save";
-                    this.classList.remove("btn-warning");
-                    this.classList.add("btn-success");
-                } else {
-                    const newName = nameCell.querySelector("input").value;
-                    const newEmail = emailCell.querySelector("input").value;
-                    const newRole = rolesCell.querySelector("select").value;
-                    const newBuildingName = buildingNameCell.querySelector("input").value;
+    //                 this.textContent = "Save";
+    //                 this.classList.remove("btn-warning");
+    //                 this.classList.add("btn-success");
+    //             } else {
+    //                 const newName = nameCell.querySelector("input").value;
+    //                 const newEmail = emailCell.querySelector("input").value;
+    //                 const newRole = rolesCell.querySelector("select").value;
+    //                 const newBuildingName = buildingNameCell.querySelector("select").value;
 
-                    fetch(`/api/staff/${id}`, {
-                        method: "PUT",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "Accept": "application/json",
-                            "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute("content") // Include CSRF token
-                        },
-                        body: JSON.stringify({
-                            name: newName,
-                            email: newEmail,
-                            role: newRole, // Assuming the API expects a single role string
-                            building_name: newBuildingName // Assuming this can be updated directly
-                        })
-                    })
-                    .then(response => {
-                        if (!response.ok) {
-                            return response.json().then(errorData => {
-                                throw new Error(errorData.message || "Update failed");
-                            });
-                        }
-                        return response.json();
-                    })
-                    .then(response => { // Changed 'updated' to 'response'
-                        if (response.success) {
-                            // Update the displayed values with the new values
-                            nameCell.textContent = newName;
-                            emailCell.textContent = newEmail;
-                            rolesCell.textContent = newRole.charAt(0).toUpperCase() + newRole.slice(1); // Display capitalized role
-                            buildingNameCell.textContent = newBuildingName; // Assuming API returns updated building name
+    //                 fetch(`/api/admin/staff/update/${id}`, {
+    //                     method: "PUT",
+    //                     headers: {
+    //                         "Content-Type": "application/json",
+    //                         "Accept": "application/json",
+    //                         "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute("content"), // Include CSRF token
+    //                         'token': localStorage.getItem('token'),
+    //                         'auth-id': localStorage.getItem('auth-id'),
+    //                     },
+    //                     body: JSON.stringify({
+    //                         name: newName,
+    //                         email: newEmail,
+    //                         role: newRole, // Assuming the API expects a single role string
+    //                         building_name: newBuildingName // Assuming this can be updated directly
+    //                     })
+    //                 })
+    //                 .then(response => {
+    //                     if (!response.ok) {
+    //                         return response.json().then(errorData => {
+    //                             throw new Error(errorData.message || "Update failed");
+    //                         });
+    //                     }
+    //                     return response.json();
+    //                 })
+    //                 .then(response => { // Changed 'updated' to 'response'
+    //                     if (response.success) {
+    //                         // Update the displayed values with the new values
+    //                         nameCell.textContent = newName;
+    //                         emailCell.textContent = newEmail;
+    //                         rolesCell.textContent = newRole.charAt(0).toUpperCase() + newRole.slice(1); // Display capitalized role
+    //                         buildingNameCell.textContent = newBuildingName.charAt(0).toUpperCase() + newRole.slice(1); // Assuming API returns updated building name
 
-                            this.textContent = "Edit";
-                            this.classList.remove("btn-success");
-                            this.classList.add("btn-warning");
-                            showCustomMessageBox(response.message || "Staff details updated successfully.", 'success');
-                        } else {
-                            showCustomMessageBox(response.message || "Failed to update staff details.", 'danger');
-                        }
-                    })
-                    .catch(error => {
-                        console.error("Update failed:", error);
-                        showCustomMessageBox(error.message || "Failed to update staff details.", 'danger');
-                    });
-                }
-            });
-        });
-    }
+    //                         this.textContent = "Edit";
+    //                         this.classList.remove("btn-success");
+    //                         this.classList.add("btn-warning");
+    //                         showCustomMessageBox(response.message || "Staff details updated successfully.", 'success');
+    //                     } else {
+    //                         showCustomMessageBox(response.message || "Failed to update staff details.", 'danger');
+    //                     }
+    //                 })
+    //                 .catch(error => {
+    //                     console.error("Update failed:", error);
+    //                     showCustomMessageBox(error.message || "Failed to update staff details.", 'danger');
+    //                 });
+    //             }
+    //         });
+    //     });
+//     }
 });
 </script>
 @endsection

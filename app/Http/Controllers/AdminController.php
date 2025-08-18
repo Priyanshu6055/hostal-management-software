@@ -52,7 +52,7 @@ class AdminController extends Controller
                 'bed_id' => 'required|exists:beds,id',
             ]);
 
-            $adminId = auth()->id();
+            $adminId = $request->header('auth-id'); // Admin ID is passed in header
             if (!$adminId) {
                 return $this->apiResponse(false, 'Unauthorized.', null, 401);
             }
@@ -95,7 +95,7 @@ class AdminController extends Controller
         }
     }
 
-    public function adminApproved(Request $request)
+    public function guestApproval(Request $request)
     {
         try {
             $validatedData = $request->validate([

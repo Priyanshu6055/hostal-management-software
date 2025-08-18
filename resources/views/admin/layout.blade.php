@@ -99,10 +99,7 @@
         <h4>
             Admin Panel
             <!-- Logout Button -->
-            <form method="POST" action="{{ route('logout') }}" class="logout-btn">
-                @csrf
-                <button type="submit" class="btn btn-danger w-100">Logout</button>
-            </form>
+                <button type="button" onClick="callLogoutAPI()" class="btn btn-danger w-100">Logout</button>
         </h4>
 
         <!-- Navigation Links -->
@@ -190,7 +187,32 @@
     <div class="content">
         @yield('content')
     </div>
+    <script type="text/javascript">
+        $(document).ready(function() {
+           if(!localStorage.getItem('token') && !localStorage.getItem('token'))
+           {
+            callLogoutAPI();
+           }
 
+
+        });
+                function callLogoutAPI() {
+        $.ajax({
+            url: '/api/logout',
+            type: 'POST',
+            headers: {
+                'token': localStorage.getItem('token'),
+                'Auth-ID': localStorage.getItem('auth-id')
+            },
+            complete: function () {
+                localStorage.removeItem('token');
+                localStorage.removeItem('auth-id');
+                window.location.href = "/login";
+            }
+        });
+        }
+
+    </script>
 </body>
 
 </html>

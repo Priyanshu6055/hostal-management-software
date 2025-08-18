@@ -50,11 +50,19 @@
         const accessoryDropdown = document.getElementById('accessory_id');
         // This line assumes 'auth()->user()->id' is accessible in the Blade template.
         // If this is a pure HTML file, you'll need to pass this value from your backend.
-        const loggedInUserId = "{{ auth()->user()->id }}"; 
+        const loggedInUserId = localStorage.getItem('auth-id'); 
 
         try {
             // Fetch residents
-            const residentResponse = await fetch("{{ url('/api/residents') }}");
+            const residentResponse = await fetch("{{ url('/api/admin/residents') }}", {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'token': localStorage.getItem('token'),
+                    'auth-id': localStorage.getItem('auth-id')
+                }
+            });
             if (!residentResponse.ok) {
                 throw new Error(`HTTP error! status: ${residentResponse.status}`);
             }
@@ -74,7 +82,15 @@
             });
 
             // Fetch accessories
-            const accessoryResponse = await fetch("{{ url('/api/accessories/active') }}");
+            const accessoryResponse = await fetch("{{ url('/api/admin/accessories/active') }}", {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'token': localStorage.getItem('token'),
+                    'auth-id': localStorage.getItem('auth-id')
+                }
+            });
             if (!accessoryResponse.ok) {
                 throw new Error(`HTTP error! status: ${accessoryResponse.status}`);
             }
@@ -114,12 +130,14 @@
             data.accessory_head_id = accessoryHeadId; // Add accessory_head_id to the data
 
             try {
-                const response = await fetch("{{ url('/api/admin-send-accessory') }}", {
+                const response = await fetch("{{ url('/api/admin/assign-accessories') }}", {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'token': localStorage.getItem('token'),
+                        'auth-id': localStorage.getItem('auth-id')
                     },
                     body: JSON.stringify(data)
                 });

@@ -202,7 +202,7 @@ class StudentAccessoryController extends Controller
             'resident_id' => 'required|exists:residents,id',
             'accessory_head_id' => 'required|exists:accessory_heads,id', // ✅ validate from accessory_heads table
             'duration' => 'required|in:1 Month,3 Months,6 Months,1 Year',
-            'created_by' => 'required|exists:users,id',
+            // 'created_by' => 'required|exists:users,id',
             'remarks' => 'nullable|string',
         ]);
 
@@ -258,7 +258,7 @@ class StudentAccessoryController extends Controller
                 'transaction_id' => null,
                 'payment_method' => 'Null',
                 'payment_status' => 'Pending',
-                'created_by' => $request->created_by,
+                'created_by' => $request->header("auth-id") ?? null,
                 'due_date' => $dueDate,
                 'remarks' => $request->remarks,
             ]);

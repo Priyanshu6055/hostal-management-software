@@ -27,7 +27,6 @@
             <label class="form-check-label" for="is_default">Is Default?</label>
         </div>
 
-        <input type="hidden" name="created_by" value="{{ auth()->user()->id }}">
         <button type="submit" class="btn btn-success">Submit Accessory</button>
     </form>
     <div id="accessoryFormMessage" class="mt-3"></div>
@@ -46,7 +45,6 @@
                         <label for="name" class="form-label">Accessory Head Name</label>
                         <input type="text" name="name" id="name" class="form-control" placeholder="Enter Accessory Head Name" required>
                     </div>
-                    <input type="hidden" name="created_by" id="created_by" value="{{ auth()->user()->id }}">
                     <div id="accessoryHeadMessage" class="mt-2"></div>
                 </div>
                 <div class="modal-footer">
@@ -91,7 +89,12 @@
 
     async function loadAccessoryHeads() {
         try {
-            const response = await fetch('/api/accessory-heads');
+            const response = await fetch('/api/admin/accessories-master', {
+                headers: {
+                    'token': localStorage.getItem('token'),
+                    'auth-id': localStorage.getItem('auth-id')
+                }
+            });
             const data = await response.json();
             const accessoryHeads = Array.isArray(data) ? data : data.data || [];
 
@@ -115,7 +118,12 @@
 
     async function loadActiveAccessories() {
         try {
-            const response = await fetch('/api/accessories/active');
+            const response = await fetch('/api/admin/accessories/active', {
+                headers: {
+                    'token': localStorage.getItem('token'),
+                    'auth-id': localStorage.getItem('auth-id')
+                }
+            });
             const data = await response.json();
             const activeAccessories = data.data || [];
 
@@ -147,7 +155,6 @@
         e.preventDefault();
 
         const name = document.getElementById('name').value;
-        const createdBy = document.getElementById('created_by').value;
         const messageDiv = document.getElementById('accessoryHeadMessage');
 
         // Clear previous messages/classes
@@ -155,13 +162,15 @@
         messageDiv.classList.remove('text-success', 'text-danger');
 
         try {
-            const response = await fetch('/api/accessory-heads/add', {
+            const response = await fetch('/api/admin/accessories-master/add', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': "{{ csrf_token() }}"
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                    'token': localStorage.getItem('token'),
+                    'auth-id': localStorage.getItem('auth-id')
                 },
-                body: JSON.stringify({ name, created_by: createdBy })
+                body: JSON.stringify({ name })
             });
 
             const data = await response.json();
@@ -195,7 +204,6 @@
         const accessoryHeadId = document.getElementById('accessory_head_id').value;
         const price = document.getElementById('price').value;
         const isDefault = document.getElementById('is_default').checked;
-        const createdBy = document.querySelector('#accessoryForm input[name="created_by"]').value;
         const messageDiv = document.getElementById('accessoryFormMessage');
 
         // Clear previous messages/classes
@@ -203,17 +211,18 @@
         messageDiv.classList.remove('text-success', 'text-danger');
 
         try {
-            const response = await fetch('/api/create-or-update-accessories', {
+            const response = await fetch('/api/admin/accessories/create-or-update', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': "{{ csrf_token() }}"
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                    'token': localStorage.getItem('token'),
+                    'auth-id': localStorage.getItem('auth-id')
                 },
                 body: JSON.stringify({
                     accessory_head_id: accessoryHeadId,
                     price,
                     is_default: isDefault,
-                    created_by: createdBy
                 })
             });
 

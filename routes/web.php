@@ -48,7 +48,7 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // ✅ Default Home Route
 Route::get('/', function () {
-    return view('welcome');
+    return view('index');
 })->name('home');
 
 
@@ -84,64 +84,111 @@ Route::middleware(['auth:sanctum', 'role:resident'])->group(function () {
 
 
 
-Route::post('/checkout/request', [CheckoutController::class, 'requestCheckout'])->middleware('auth');
+// Route::post('/checkout/request', [CheckoutController::class, 'requestCheckout'])->middleware('auth');
 
 // ✅ Admin Routes
-Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+// Route::middleware(['admin_api_auth'])->group(function(){
     Route::view('/admin/dashboard', 'admin.admin')->name('admin.dashboard');
+    Route::get('/admin-dashboard', fn() => view('dashboard'))->name('admin.dashboard');
+
     Route::view('/admin/buildings', 'admin.building')->name('admin.building');
     Route::view('/admin/buildings/create', 'admin.create_building')->name('admin.create_building');
-    Route::post('/admin/buildings', [BuildingController::class, 'store'])->name('admin.store_building');
-    Route::delete('/admin/buildings/{id}', [BuildingController::class, 'destroy'])->name('admin.delete_building');
-
-    Route::view('/admin/beds', 'admin.beds')->name('admin.beds');
-    Route::view('/admin/beds/create', 'admin.create_bed')->name('admin.create_bed');
-    Route::view('/admin/assignbed', 'admin.assignbed')->name('admin.assignbed');
-    Route::get('/admin/api/beds', [BedController::class, 'index'])->name('admin.list_beds');
-    Route::post('/admin/api/beds', [BedController::class, 'store'])->name('admin.store_bed');
-
-
- 
-
-
-    Route::view('/admin/accessories', 'admin.accessory')->name('admin.accessories');
-    Route::view('/admin/accessories/create', 'admin.create_accessory')->name('admin.create_accessory');
-    Route::post('/admin/accessories', [AccessoryController::class, 'store'])->name('admin.store_accessory');
-
-    Route::view('/admin/staff', 'admin.staff')->name('admin.staff');
-    Route::view('/admin/staff/create', 'admin.create_staff')->name('admin.create_staff');
-    Route::post('/admin/staff', [StaffController::class, 'createStaff'])->name('admin.store_staff');
-    Route::delete('/admin/staff/{id}', [StaffController::class, 'destroy'])->name('admin.delete_staff');
+    Route::view('/admin/buildings/edit/{id}', 'admin.edit_building')->name('edit.edit_building');
+    // Route::post('/admin/buildings', [BuildingController::class, 'store'])->name('admin.store_building');
+    // Route::delete('/admin/buildings/{id}', [BuildingController::class, 'destroy'])->name('admin.delete_building');
 
     Route::view('/admin/rooms', 'admin.rooms')->name('admin.rooms');
-    Route::get('/admin/rooms/list', [RoomController::class, 'index'])->name('admin.list_rooms');
+    // Route::get('/admin/rooms/list', [RoomController::class, 'index'])->name('admin.list_rooms');
     Route::view('/admin/rooms/create', 'admin.create_rooms')->name('admin.create_rooms');
-    Route::post('/admin/rooms', [RoomController::class, 'store'])->name('admin.store_room');
-    Route::delete('/admin/rooms/{id}', [RoomController::class, 'destroy'])->name('admin.delete_room');
+    Route::view('/admin/rooms/edit/{id}', 'admin.edit_rooms')->name('admin.edit_rooms');
+    // Route::post('/admin/rooms', [RoomController::class, 'store'])->name('admin.store_room');
+    // Route::delete('/admin/rooms/{id}', [RoomController::class, 'destroy'])->name('admin.delete_room');
+    
+    Route::view('/admin/beds', 'admin.beds')->name('admin.beds');
+    Route::view('/admin/beds/create', 'admin.create_bed')->name('admin.create_bed');
+    // Route::get('/admin/api/beds', [BedController::class, 'index'])->name('admin.list_beds');
+    // Route::post('/admin/api/beds', [BedController::class, 'store'])->name('admin.store_bed');
+
+    Route::view('/admin/assignbed', 'admin.assignbed')->name('admin.assignbed');
 
     Route::view('/admin/residents', 'admin.residents')->name('admin.residents');
-    Route::get('/admin/residents/list', [ResidentController::class, 'index'])->name('admin.list_residents');
-    Route::post('/admin/residents', [ResidentController::class, 'store'])->name('admin.store_resident');
 
     Route::view('/admin/leave-requests', 'admin.leave_requests')->name('admin.leave_requests');
     Route::view('/admin/grievances', 'admin.grievances')->name('admin.grievances');
     Route::view('/admin/room-change-requests', 'admin.room_change')->name('admin.room_change');
     Route::view('/admin/feedbacks', 'admin.feedback')->name('admin.feedbacks');
 
-    // Route::view('/admin/fee_list', 'admin.fee_list')->name('admin.fee_list');
-    // Route::get('/admin/fees', [FeeController::class, 'getAllFees']);
-    // Route::post('/admin/add-fees', [FeeController::class, 'addOrUpdateFees']);
-
-    Route::view('/admin/notices', 'admin.notices')->name('admin.notices');
-    Route::view('/admin/notices/create', 'admin.create_notice')->name('admin.create_notice');
-    Route::post('/admin/notices', [NoticeController::class, 'store'])->name('admin.store_notice');
-    Route::delete('/admin/notices/{id}', [NoticeController::class, 'destroy'])->name('admin.delete_notice');
+    Route::view('/admin/pending-guests', 'admin.pending_guest')->name('guest.pending');
+    Route::view('/admin/guests/paid', 'admin.paidguest')->name('admin.paid.guests');
 
     Route::view('/admin/pendingpayments', 'admin.pendingpayments')->name('admin.pendingpayments');
     Route::view('/admin/checkout', 'admin.checkout')->name('admin.checkout');
 
-    Route::view('/admin/pending-guests', 'admin.pending_guest')->name('guest.pending');
-    Route::view('/admin/guests/paid', 'admin.paidguest')->name('admin.paid.guests');
+    Route::view('/admin/accessories', 'admin.accessory')->name('admin.accessories');
+    Route::view('/admin/accessories/create', 'admin.create_accessory')->name('admin.create_accessory');
+    Route::view('/admin/staff', 'admin.staff')->name('admin.staff');
+    Route::view('/admin/staff/create', 'admin.create_staff')->name('admin.create_staff');
+    Route::view('/admin/staff/edit/{id}', 'admin.edit_staff')->name('admin.edit_staff');
+
+    Route::view('/admin/notices', 'admin.notices')->name('admin.notices');
+    Route::view('/admin/notices/create', 'admin.create_notice')->name('admin.create_notice');
+
+    // });
+
+Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+    // Route::view('/admin/buildings', 'admin.building')->name('admin.building');
+    // Route::view('/admin/buildings/create', 'admin.create_building')->name('admin.create_building');
+    // Route::post('/admin/buildings', [BuildingController::class, 'store'])->name('admin.store_building');
+    // Route::delete('/admin/buildings/{id}', [BuildingController::class, 'destroy'])->name('admin.delete_building');
+
+    // Route::view('/admin/beds', 'admin.beds')->name('admin.beds');
+    // Route::view('/admin/beds/create', 'admin.create_bed')->name('admin.create_bed');
+    // Route::view('/admin/assignbed', 'admin.assignbed')->name('admin.assignbed');
+    // Route::get('/admin/api/beds', [BedController::class, 'index'])->name('admin.list_beds');
+    // Route::post('/admin/api/beds', [BedController::class, 'store'])->name('admin.store_bed');
+
+
+ 
+
+
+    // Route::view('/admin/accessories', 'admin.accessory')->name('admin.accessories');
+    // Route::view('/admin/accessories/create', 'admin.create_accessory')->name('admin.create_accessory');
+    // Route::post('/admin/accessories', [AccessoryController::class, 'store'])->name('admin.store_accessory');
+
+    // Route::view('/admin/staff', 'admin.staff')->name('admin.staff');
+    // Route::view('/admin/staff/create', 'admin.create_staff')->name('admin.create_staff');
+    // Route::post('/admin/staff', [StaffController::class, 'createStaff'])->name('admin.store_staff');
+    // Route::delete('/admin/staff/{id}', [StaffController::class, 'destroy'])->name('admin.delete_staff');
+
+    // Route::view('/admin/rooms', 'admin.rooms')->name('admin.rooms');
+    // Route::get('/admin/rooms/list', [RoomController::class, 'index'])->name('admin.list_rooms');
+    // Route::view('/admin/rooms/create', 'admin.create_rooms')->name('admin.create_rooms');
+    // Route::post('/admin/rooms', [RoomController::class, 'store'])->name('admin.store_room');
+    // Route::delete('/admin/rooms/{id}', [RoomController::class, 'destroy'])->name('admin.delete_room');
+
+    // Route::view('/admin/residents', 'admin.residents')->name('admin.residents');
+    // Route::get('/admin/residents/list', [ResidentController::class, 'index'])->name('admin.list_residents');
+    // Route::post('/admin/residents', [ResidentController::class, 'store'])->name('admin.store_resident');
+
+    // Route::view('/admin/leave-requests', 'admin.leave_requests')->name('admin.leave_requests');
+    // Route::view('/admin/grievances', 'admin.grievances')->name('admin.grievances');
+    // Route::view('/admin/room-change-requests', 'admin.room_change')->name('admin.room_change');
+    // Route::view('/admin/feedbacks', 'admin.feedback')->name('admin.feedbacks');
+
+    // Route::view('/admin/fee_list', 'admin.fee_list')->name('admin.fee_list');
+    // Route::get('/admin/fees', [FeeController::class, 'getAllFees']);
+    // Route::post('/admin/add-fees', [FeeController::class, 'addOrUpdateFees']);
+
+    // Route::view('/admin/notices', 'admin.notices')->name('admin.notices');
+    // Route::view('/admin/notices/create', 'admin.create_notice')->name('admin.create_notice');
+    // Route::post('/admin/notices', [NoticeController::class, 'store'])->name('admin.store_notice');
+    // Route::delete('/admin/notices/{id}', [NoticeController::class, 'destroy'])->name('admin.delete_notice');
+
+    // Route::view('/admin/pendingpayments', 'admin.pendingpayments')->name('admin.pendingpayments');
+    // Route::view('/admin/checkout', 'admin.checkout')->name('admin.checkout');
+
+    // Route::view('/admin/pending-guests', 'admin.pending_guest')->name('guest.pending');
+    // Route::view('/admin/guests/paid', 'admin.paidguest')->name('admin.paid.guests');
 
 
 
@@ -157,14 +204,22 @@ Route::middleware(['auth:sanctum', 'role:super_admin'])->group(function () {
 });
 
 // ✅ Guest Routes
-Route::view('/guest', 'guest.guest')->name('guest');
-Route::view('/guest/status', 'guest.status')->name('guest.status');
-Route::get('/guest/register', fn() => view('guest.registration'))->name('guest.register');
-Route::get('/guest/payment/{guestId}', function ($guestId) {
-    $guest = \App\Models\Guest::findOrFail($guestId);
-    return view('guest.payment', compact('guest'));
-})->name('guest.payment');
-Route::view('/guest/makepayment', 'Guest.makepayment')->name('Guest.makepayment');
+// Route::get('/guest/register', fn() => view('guest.register'));
+Route::view('/guest/registration-status', 'Guest.registration_status')->name('guest.registration_status');
+// Handle login POST request
+Route::post('/guest/regs_status', [LoginController::class, 'guestLogin'])->name('guest.regs_status');
+Route::get('/guest/registration', fn() => view('guest.register'))->name('guest.register');
+
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::view('/guest', 'guest.guest')->name('guest');
+    Route::view('/guest/status', 'guest.status')->name('guest.status');
+    Route::get('/guest/payment/{guestId}', function ($guestId) {
+        $guest = \App\Models\Guest::findOrFail($guestId);
+        return view('guest.payment', compact('guest'));
+    })->name('guest.payment');
+    Route::view('/guest/makepayment', 'Guest.makepayment')->name('Guest.makepayment');
+    // Route::view('/guest/application-status', 'guest_status')->name('guest_status');
+});
 
 // ✅ Mess & Accountant
 
@@ -199,12 +254,11 @@ Route::post('/payments/{id}/process', fn($id) => redirect('/resident/subscriptio
 Route::get('/resident/subscription_payment/{id}', fn($id) => view('resident.subscription_payment', ['subscription_id' => $id]));
 
 // ✅ Fallback / Miscellaneous
-Route::middleware(['auth'])->get('/admin-dashboard', fn() => view('dashboard'))->name('admin.dashboard');
 Route::post('/logout', function (Request $request) {
     Auth::logout();
     $request->session()->invalidate();
     $request->session()->regenerateToken();
-    return redirect('/login');
+    return redirect('/');
 })->name('logout');
 
 

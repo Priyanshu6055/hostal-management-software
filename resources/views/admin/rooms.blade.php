@@ -25,6 +25,7 @@
                                 <th>Serial No.</th>
                                 <th>Room Number</th>
                                 <th>Building Name</th>
+                                <th>Floor No</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
@@ -58,203 +59,85 @@
     </div>
 </div>
 
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    let deleteConfirmationModal; // Declare for global access
-    let roomToDeleteId = null; // To store the ID of the room to be deleted
+<script type="text/javascript">
+$(document).ready(function(){
+    $.ajax({
+        url: '/api/admin/rooms', // your API endpoint
+        type: 'GET',
+        headers: {
+            'token': localStorage.getItem('token'),
+            'auth-id': localStorage.getItem('auth-id')
+        },
+        success: function (response) {
+            if (response.success && Array.isArray(response.data)) {
+                let rows = '';              
+                response.data.forEach(function (room, index) {
+                    rows += `
+                        <tr data-id="${room.id}">
+                            <td>${index + 1}</td>
+                            <td class="room_number">${room.room_number}</td>
+                            <td class="building_name">${room.building_name || 'Unknown'}</td>
+                            <td class="building_name">${room.floor_no || 'Unknown'}</td>
+                            <td class="status">
+                                <span class="badge ${room.status === 'available' ? 'bg-success' : 'bg-danger'}">
+                                    ${room.status.charAt(0).toUpperCase() + room.status.slice(1)}
+                                </span>
+                            </td>
+                            <td class="actions">
+                                <a class="btn btn-sm btn-warning me-1" href="/admin/rooms/edit/${room.id}">Edit</a>
+                                <button class="btn btn-sm btn-danger" onclick="deleteRoom(${room.id})">Delete</button>
+                            </td>
+                        </tr>
+                    `;  
 
-    // Initialize Bootstrap modal after DOM is ready
-    deleteConfirmationModal = new bootstrap.Modal(document.getElementById('deleteConfirmationModal'));
-
-    // Fetch rooms when the page loads
-    fetchRooms();
-
-    // Event listener for the confirm delete button inside the modal
-    document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
-        if (roomToDeleteId !== null) {
-            performDelete(roomToDeleteId);
-            deleteConfirmationModal.hide(); // Hide the modal after confirming deletion
-        }
+                });
+                $('#roomList tbody').html(rows);
+            } else {
+                $('#roomList tbody').html('<tr><td colspan="4">No data found</td></tr>');
+            }
+            },
+            error: function (xhr) {
+                console.error(xhr);
+                $('#roomList tbody').html('<tr><td colspan="4">Error loading data</td></tr>');
+            }
     });
 
-    // Fetch all rooms and building data
-    function fetchRooms() {
-        Promise.all([
-            fetch("{{ url('/api/rooms') }}").then(response => {
-                if (!response.ok) {
-                    return response.text().then(text => { throw new Error(`HTTP error! Status: ${response.status}, Message: ${text}`); });
-                }
-                return response.json();
-            }),
-            fetch("{{ url('/api/buildings') }}").then(response => {
-                if (!response.ok) {
-                    return response.text().then(text => { throw new Error(`HTTP error! Status: ${response.status}, Message: ${text}`); });
-                }
-                return response.json();
-            })
-        ])
-        .then(([roomsApiResponse, buildingsApiResponse]) => {
-            let roomList = document.getElementById("roomList").querySelector("tbody");
-            roomList.innerHTML = ""; // Clear existing rows
+    
 
-            // Check if rooms API response is successful and contains data
-            if (!roomsApiResponse.success || !Array.isArray(roomsApiResponse.data) || roomsApiResponse.data.length === 0) {
-                roomList.innerHTML = `<tr><td colspan="5" class="text-center">No rooms found.</td></tr>`;
-                return;
-            }
-
-            // Create a map for building IDs to names for easy lookup
-            const buildingMap = {};
-            if (buildingsApiResponse.success && Array.isArray(buildingsApiResponse.data)) {
-                buildingsApiResponse.data.forEach(building => {
-                    buildingMap[building.id] = building.name;
-                });
-            } else {
-                // If building data is not as expected, log an error but don't stop room display
-                console.error("Invalid building data structure:", buildingsApiResponse);
-            }
-
-            // Populate the table with room data
-            roomsApiResponse.data.forEach((room, index) => {
-                roomList.innerHTML += generateRow(room, index + 1, buildingMap);
-            });
-            showError(''); // Clear any previous error messages on successful data fetch
-        })
-        .catch(error => {
-            showError(`Failed to load rooms or buildings: ${error.message}`);
-            console.error('Error fetching rooms or buildings:', error);
-        });
-    }
-
-    // Generate a table row for a room
-    function generateRow(room, serialNo, buildingMap) {
-        const buildingName = buildingMap[room.building_id] || 'Unknown'; // Get building name from map
-
-        let badge = room.status === 'available' || room.is_available
-            ? `<span class="badge bg-success">Available</span>`
-            : `<span class="badge bg-danger">Not Available</span>`;
-
-        return `
-            <tr data-id="${room.id}">
-                <td>${serialNo}</td>
-                <td class="room_number">${room.room_number}</td>
-                <td class="building_name">${buildingName}</td>
-                <td class="status">${badge}</td>
-                <td class="actions">
-                    <button class="btn btn-sm btn-warning me-1" onclick="enableEdit(this)">Update</button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteRoom(${room.id})">Delete</button>
-                </td>
-            </tr>`;
-    }
-
-    // Enable editing for a room row
-    window.enableEdit = function(button) {
-        const row = button.closest('tr');
-        const room_number = row.querySelector('.room_number').innerText;
-        const building_name = row.querySelector('.building_name').innerText; // Keep building name for display
-        const status_text = row.querySelector('.status span').innerText.toLowerCase();
-
-        row.querySelector('.room_number').innerHTML = `<input type="text" class="form-control form-control-sm" value="${room_number}">`;
-        // Building name is usually not editable in a room entry, so keep it as text or disabled input
-        row.querySelector('.building_name').innerHTML = `<span class="form-control-plaintext form-control-sm">${building_name}</span>`;
-        row.querySelector('.status').innerHTML = `
-            <select class="form-select form-select-sm">
-                <option value="available" ${status_text.includes('available') ? 'selected' : ''}>Available</option>
-                <option value="not available" ${status_text.includes('not') ? 'selected' : ''}>Not Available</option>
-            </select>`;
-
-        row.querySelector('.actions').innerHTML = `
-            <button class="btn btn-sm btn-success me-1" onclick="saveUpdate(this)">Save</button>
-            <button class="btn btn-sm btn-secondary" onclick="cancelEdit()">Cancel</button>`;
-    }
-
-    // Cancel the edit and reload rooms
-    window.cancelEdit = function() {
-        fetchRooms();
-    }
-
-    // Save the updated room data
-    window.saveUpdate = function(button) {
-        const row = button.closest('tr');
-        const id = row.dataset.id;
-        const room_number = row.querySelector('.room_number input').value;
-        const status = row.querySelector('.status select').value;
-
-        fetch(`/api/rooms/${id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                room_number,
-                status
-            })
-        })
-        .then(response => {
-            if (!response.ok) {
-                return response.text().then(text => { throw new Error(`Update failed! Status: ${response.status}, Message: ${text}`); });
-            }
-            return response.json();
-        })
-        .then(data => {
-            fetchRooms(); // Reload rooms after successful update
-            // Optionally, show a success message
-            // showError("Room updated successfully!", "success");
-        })
-        .catch(error => {
-            showError(`Failed to update room: ${error.message}`);
-            console.error('Error updating room:', error);
-        });
-    }
-
-    // Prepare for room deletion by showing the confirmation modal
-    window.deleteRoom = function(id) {
-        roomToDeleteId = id; // Store the ID of the room to be deleted
-        deleteConfirmationModal.show(); // Show the Bootstrap modal
-    }
-
-    // Perform the actual room deletion after confirmation
-    function performDelete(id) {
-        fetch(`/api/rooms/${id}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            }
-        })
-        .then(response => {
-            if (!response.ok) {
-                return response.text().then(text => { throw new Error(`Deletion failed! Status: ${response.status}, Message: ${text}`); });
-            }
-            return response.json();
-        })
-        .then(() => {
-            fetchRooms(); // Reload rooms after successful deletion
-            // Optionally, show a success message
-            // showError("Room deleted successfully!", "success");
-        })
-        .catch(error => {
-            showError(`Failed to delete room: ${error.message}`);
-            console.error('Error deleting room:', error);
-        });
-    }
-
-    // Show error message in the alert box
-    function showError(message) {
-        const errorAlert = document.getElementById("errorAlert");
-        errorAlert.textContent = message;
-        if (message) { // Only show if there's an actual message
-            errorAlert.classList.remove("d-none");
-            setTimeout(() => {
-                errorAlert.classList.add("d-none");
-            }, 4000);
-        } else { // Hide if message is empty
-            errorAlert.classList.add("d-none");
-        }
-    }
 });
+
+function deleteRoom(id) {
+    // Show the confirmation modal
+    $('#deleteConfirmationModal').modal('show');
+
+    // Set up the confirm delete button
+    $('#confirmDeleteBtn').off('click').on('click', function() {
+        $.ajax({
+            url: `/api/admin/rooms/${id}`,
+            type: 'DELETE',
+            headers: {
+                'token': localStorage.getItem('token'),
+                'auth-id': localStorage.getItem('auth-id')
+            },
+            success: function(response) {
+                if (response.success) {
+                    $('#deleteConfirmationModal').modal('hide');
+                    showAlert('success', 'Room deleted successfully.');
+                    fetchRooms(); // Refresh the room list
+                } else {
+                    showAlert('danger', response.message || 'Failed to delete room.');
+                }
+            },
+            error: function(xhr) {
+                let errorMessage = "Failed to delete room.";
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                showAlert('danger', errorMessage);
+            }
+        });
+    });
+}   
 </script>
 {{-- Bootstrap CSS and JS are typically included in admin.layout or a common layout file.
      If not, ensure these are present for Bootstrap functionality. --}}

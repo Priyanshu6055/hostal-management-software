@@ -21,8 +21,8 @@ class BedController extends Controller
                     })
                 ],
                 'room_id' => 'required|exists:rooms,id',
-                'status' => 'required|in:available,occupied,maintenance',
             ]);
+            $request['status'] = $request->input('status', 'available'); // Default to 'available' if not provided  
 
             $bed = Bed::create($request->all());
 
@@ -52,7 +52,7 @@ class BedController extends Controller
     public function index()
     {
         try {
-            $beds = Bed::all();
+            $beds = Bed::with(['room.building'])->get();
 
             if ($beds->isEmpty()) {
                 return response()->json([
@@ -113,17 +113,17 @@ class BedController extends Controller
             $bed = Bed::findOrFail($id);
 
             $request->validate([
-                'bed_number' => [
-                    'sometimes',
-                    'required',
-                    Rule::unique('beds')->ignore($id)->where(function ($query) use ($request) {
-                        if ($request->has('room_id')) {
-                            return $query->where('room_id', $request->room_id);
-                        }
-                        return $query;
-                    })
-                ],
-                'room_id' => 'sometimes|required|exists:rooms,id',
+                // 'bed_number' => [
+                //     'sometimes',
+                //     'required',
+                //     Rule::unique('beds')->ignore($id)->where(function ($query) use ($request) {
+                //         if ($request->has('room_id')) {
+                //             return $query->where('room_id', $request->room_id);
+                //         }
+                //         return $query;
+                //     })
+                // ],
+                // 'room_id' => 'sometimes|required|exists:rooms,id',
                 'status' => 'sometimes|required|in:available,occupied,maintenance',
             ]);
 

@@ -16,6 +16,8 @@
                 <th>Email</th>
                 <th>Gender</th>
                 <th>Bed Number</th>
+                <th>Room Number</th>
+                <th>Building Name</th>
                 <th>Room Preference</th>
                 <th>Food Preference</th>
                 <th>Status</th>
@@ -28,63 +30,66 @@
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", fetchResidents);
+    $(document).ready(function() {
+        // Fetch residents when the document is ready
+        fetchResidents();
 
-// Function to show a custom message box
-function showCustomMessageBox(message, type = 'info') {
-    const messageContainer = document.getElementById('responseMessage');
-    if (messageContainer) { // Ensure the container exists
-        messageContainer.innerHTML = ""; // Clear previous messages
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type}`;
-        alertDiv.textContent = message;
-        messageContainer.appendChild(alertDiv);
-        setTimeout(() => alertDiv.remove(), 3000); // Remove after 3 seconds
-    } else {
-        console.warn("Message container #responseMessage not found.");
-    }
-}
+        // Function to show a custom message box
+        function showCustomMessageBox(message, type = 'info') {
+            const messageContainer = $('#responseMessage');
+            messageContainer.html(`<div class="alert alert-${type}">${message}</div>`);
+            setTimeout(() => messageContainer.empty(), 3000); // Clear after 3 seconds
+        }
+    });
 
-function fetchResidents() {
-    fetch("{{ url('/api/residents') }}")
-        .then(response => response.json())
-        .then(data => {
-            // Correctly access residents from data.data as per the API response structure
-            const residents = data.data;
-            const residentList = document.getElementById("residentList");
-            residentList.innerHTML = "";
+    // Function to fetch residents
+    function fetchResidents() {
+        $.ajax({
+            url: "{{ url('/api/admin/residents') }}",
+            type: 'GET',
+            headers: {
+                'token': localStorage.getItem('token'),
+                'Auth-ID': localStorage.getItem('auth-id')
+            },
+            success: function(response) {
+                const residents = response.data;
+                const residentList = $("#residentList");
+                residentList.empty();
 
-            if (!Array.isArray(residents) || residents.length === 0) {
-                residentList.innerHTML = `<tr><td colspan="10" class="text-center">No residents found.</td></tr>`;
-                return;
+                if (!Array.isArray(residents) || residents.length === 0) {
+                    residentList.append(`<tr><td colspan="10" class="text-center">No residents found.</td></tr>`);
+                    return;
+                }
+
+                residents.forEach((resident, index) => {
+                    const guest = resident.guest || {};
+                    const bed = resident.bed || {};
+
+                    residentList.append(`
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${resident.scholar_no || 'N/A'}</td>
+                            <td>${resident.name || 'N/A'}</td>
+                            <td>${resident.email || 'N/A'}</td>
+                            <td>${resident.gender || 'N/A'}</td> {{-- Changed from guest.gender to resident.gender based on API --}}
+                            <td>${bed.bed_number || 'Not Assigned'}</td>
+                            <td>${bed.room.room_number || 'N/A'}</td>
+                            <td>${bed.room.building.name || 'N/A'}</td>
+                            <td>${guest.room_preference || 'N/A'}</td>
+                            <td>${guest.food_preference || 'N/A'}</td>
+                            <td>${resident.status || 'N/A'}</td>
+                            <td>${new Date(resident.created_at).toLocaleString()}</td>
+                        </tr>
+                    `);
+                });
+            },
+            error: function(xhr) {
+                console.error("Error fetching residents:", xhr);
+                $("#residentList").html(`<tr><td colspan="10" class="text-danger text-center">Error loading residents.</td></tr>`);
+                showCustomMessageBox("Failed to load residents.", 'danger'); // Display error message
             }
-
-            residents.forEach((resident, index) => {
-                const guest = resident.guest || {};
-                const bed = resident.bed || {};
-
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                    <td>${index + 1}</td>
-                    <td>${resident.scholar_no || 'N/A'}</td> {{-- Changed from guest.scholar_no to resident.scholar_no based on API --}}
-                    <td>${resident.name || 'N/A'}</td> {{-- Changed from guest.name to resident.name based on API --}}
-                    <td>${resident.email || 'N/A'}</td> {{-- Changed from guest.email to resident.email based on API --}}
-                    <td>${resident.gender || 'N/A'}</td> {{-- Changed from guest.gender to resident.gender based on API --}}
-                    <td>${bed.bed_number || 'Not Assigned'}</td>
-                    <td>${guest.room_preference || 'N/A'}</td>
-                    <td>${guest.food_preference || 'N/A'}</td>
-                    <td>${resident.status || 'N/A'}</td>
-                    <td>${new Date(resident.created_at).toLocaleString()}</td>
-                `;
-                residentList.appendChild(row);
-            });
-        })
-        .catch(error => {
-            console.error("Error fetching residents:", error);
-            document.getElementById("residentList").innerHTML =
-                `<tr><td colspan="10" class="text-danger text-center">Error loading residents.</td></tr>`;
-            showCustomMessageBox("Failed to load residents.", 'danger'); // Display error message
         });
-}
+    }
 </script>
 @endsection
+
