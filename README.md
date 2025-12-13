@@ -97,109 +97,69 @@ Multiple user roles with clearly defined permissions:
 
 ---
 
-## ⚙️ Installation & Setup
+## ⚙️ Setup, Workflow & Project Overview (Single Page)
 
-### 1️⃣ Clone the Repository
 ```bash
+# ================================
+# INSTALLATION & SETUP
+# ================================
+
+# Clone repository
 git clone https://github.com/your-username/hostel-management-system.git
 cd hostel-management-system
 
-# ============================================================
-# Hostel Management System - Setup Script
-# Tech Stack: Laravel | RBAC | Auth | MySQL
-# Author: Priyanshu Raj
-# ============================================================
-
-echo "🚀 Starting Hostel Management System Setup..."
-
-# ------------------------------------------------------------
-# 2️⃣ Install Dependencies
-# ------------------------------------------------------------
-echo "📦 Installing PHP dependencies using Composer..."
+# Install dependencies
 composer install
 
-# ------------------------------------------------------------
-# 3️⃣ Environment Setup
-# ------------------------------------------------------------
-echo "⚙️ Setting up environment configuration..."
-
-if [ ! -f .env ]; then
-  cp .env.example .env
-  echo ".env file created from .env.example"
-else
-  echo ".env file already exists"
-fi
-
+# Environment setup
+cp .env.example .env
 php artisan key:generate
-echo "🔑 Application key generated"
 
-echo ""
-echo "⚠️ IMPORTANT:"
-echo "Update your database credentials in the .env file:"
-echo ""
-echo "DB_DATABASE=hostel_db"
-echo "DB_USERNAME=root"
-echo "DB_PASSWORD="
-echo ""
+# Update .env with database credentials
+DB_DATABASE=hostel_db
+DB_USERNAME=root
+DB_PASSWORD=
 
-# ------------------------------------------------------------
-# 4️⃣ Database Migration & Seeding
-# ------------------------------------------------------------
-echo "🗄️ Running database migrations..."
+# Database migration & seeding
 php artisan migrate
-
-echo "🌱 Seeding initial data..."
 php artisan db:seed
 
-# ------------------------------------------------------------
-# 5️⃣ Storage Link
-# ------------------------------------------------------------
-echo "📁 Creating storage symbolic link..."
+# Storage link
 php artisan storage:link
 
-# ------------------------------------------------------------
-# 6️⃣ Run the Application
-# ------------------------------------------------------------
-echo "▶️ Starting Laravel development server..."
+# Run application
 php artisan serve
 
-echo ""
-echo "✅ Application is running at:"
-echo "http://127.0.0.1:8000"
-echo ""
+# Access application
+# http://127.0.0.1:8000
 
-# ============================================================
-# 🔄 APPLICATION WORKFLOW
-# ============================================================
-# 1. Student applies for hostel
-# 2. Admin / Warden verifies student details
-# 3. Room allocation is assigned
-# 4. Hostel & facility fee is generated
-# 5. Student requests fee waiver (if applicable)
-# 6. Accounts approve waiver
-# 7. Payment is modified & finalized
-# 8. Student gains hostel access
-# ============================================================
 
-# ============================================================
-# 📈 IMPACT & BENEFITS
-# ============================================================
-# 🚫 Reduced paperwork by ~90%
-# ⚡ Faster approvals & hostel allocation
-# 🔐 Secure role-based access (RBAC)
-# 📊 Transparent fee & approval tracking
-# 🧩 Scalable architecture for future modules
-# 📊 Online payment gateway integration
-# ⚡ Email / SMS notification system
-# ============================================================
+# ================================
+# APPLICATION WORKFLOW
+# ================================
 
-# ============================================================
-# 🔮 FUTURE ENHANCEMENTS
-# ============================================================
+Student applies for hostel
+Admin / Warden verifies student details
+Room allocation is assigned
+Fee is generated
+Student requests waiver (if applicable)
+Accounts approve waiver
+Payment is modified & finalized
+Student gains hostel access
 
-# - Attendance & mess management
-# - Reports & analytics dashboard
-# - API support for mobile applications
-# ============================================================
 
-echo "🎉 Setup completed successfully!"
+# ================================
+# IMPACT & BENEFITS
+# ================================
+
+Reduced paperwork by ~90%
+Faster approvals & hostel allocation
+Secure role-based access (RBAC)
+Transparent fee & approval tracking
+Scalable architecture for future modules
+Online payment gateway integration
+Email / SMS notification system
+Attendance & mess management
+Reports & analytics dashboard
+API-based mobile app support
+
