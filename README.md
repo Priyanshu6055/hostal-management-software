@@ -189,13 +189,14 @@ echo ""
 # 🔐 Secure role-based access (RBAC)
 # 📊 Transparent fee & approval tracking
 # 🧩 Scalable architecture for future modules
+# 📊 Online payment gateway integration
+# ⚡ Email / SMS notification system
 # ============================================================
 
 # ============================================================
 # 🔮 FUTURE ENHANCEMENTS
 # ============================================================
-# - Online payment gateway integration
-# - Email / SMS notification system
+
 # - Attendance & mess management
 # - Reports & analytics dashboard
 # - API support for mobile applications
